@@ -1,7 +1,6 @@
 import { motion, type Variants } from 'framer-motion';
 import { ArrowUpRight, BrainCircuit, Activity, ShieldCheck, FileCheck2, Lightbulb, Play, GitBranch, CheckCircle2, User, Database } from 'lucide-react';
 import { StatsCard } from './StatsCard';
-import { Navbar } from './Navbar';
 
 export function Hero() {
   // Blur-to-sharp line-by-line reveal for heading
@@ -42,8 +41,6 @@ export function Hero() {
             className="absolute top-1/4 left-1/4 w-[60vw] h-[60vw] md:w-[800px] md:h-[800px] bg-[#1a3845] rounded-full blur-[120px] opacity-40" 
           />
         </div>
-
-        <Navbar />
 
         <div className="container mx-auto px-6 relative z-10 w-full max-w-7xl">
         

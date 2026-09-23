@@ -99,7 +99,7 @@ export function CustomCursor() {
         transition={{ type: 'spring', stiffness: 800, damping: 25, mass: 0.2 }}
       />
       <motion.div
-        className="fixed top-0 left-0 w-8 h-8 -ml-4 -mt-4 border rounded-full pointer-events-none z-[9998]"
+        className="fixed top-0 left-0 w-8 h-8 -ml-4 -mt-4 border rounded-full pointer-events-none z-[9998] mix-blend-difference"
         style={{ x: ringX, y: ringY, willChange: 'transform, opacity, border-color' }}
         variants={ringVariants}
         animate={cursorType}
