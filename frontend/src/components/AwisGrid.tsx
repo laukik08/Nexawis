@@ -20,13 +20,13 @@ import {
 const dimensions = [
   { icon: Code2, title: "Skill", desc: "Mandatory & preferred skill coverage", color: "text-[--color-accent-lime]", glow: "shadow-[#e8f39a]/30" },
   { icon: Briefcase, title: "Experience", desc: "Domain & leadership history", color: "text-[--color-accent-cyan]", glow: "shadow-[#22d3ee]/30" },
-  { icon: TrendingUp, title: "Performance", desc: "Historical delivery consistency", color: "text-[--color-text-primary]", glow: "shadow-[--color-border-strong]" },
+  { icon: TrendingUp, title: "Performance", desc: "Historical delivery consistency", color: "text-[--color-accent-cyan]", glow: "shadow-[--color-border-strong]" },
   { icon: CalendarCheck, title: "Availability", desc: "Current capacity & leave plans", color: "text-[--color-accent-lime]", glow: "shadow-[#e8f39a]/30" },
-  { icon: Gauge, title: "Workload", desc: "Overtime & utilization limits", color: "text-[--color-text-primary]", glow: "shadow-[--color-border-strong]" },
-  { icon: HeartPulse, title: "Burnout", desc: "Predicted mental fatigue risk", color: "text-emerald-400", glow: "shadow-emerald-400/30" },
+  { icon: Gauge, title: "Workload", desc: "Overtime & utilization limits", color: "text-[--color-accent-cyan]", glow: "shadow-[--color-border-strong]" },
+  { icon: HeartPulse, title: "Burnout", desc: "Predicted mental fatigue risk", color: "text-[--color-accent-lime]", glow: "shadow-emerald-400/30" },
   { icon: Users, title: "Collaboration", desc: "Cross-functional synergy", color: "text-[--color-accent-lime]", glow: "shadow-[#e8f39a]/30" },
   { icon: GraduationCap, title: "Learning", desc: "Upskilling opportunities", color: "text-[--color-accent-cyan]", glow: "shadow-[#22d3ee]/30" },
-  { icon: Target, title: "Project Fit", desc: "Alignment with project priority", color: "text-[--color-text-primary]", glow: "shadow-[--color-border-strong]" }
+  { icon: Target, title: "Project Fit", desc: "Alignment with project priority", color: "text-[--color-accent-cyan]", glow: "shadow-[--color-border-strong]" }
 ];
 
 export function AwisGrid() {
@@ -146,8 +146,8 @@ export function AwisGrid() {
           <div className="flex flex-col items-center justify-center h-full">
             <div className="relative w-40 h-40">
               <svg className="w-full h-full transform -rotate-90">
-                <circle cx="80" cy="80" r="70" fill="none" stroke="var(--color-surface-1)" strokeWidth="12" />
-                <motion.circle cx="80" cy="80" r="70" fill="none" stroke="var(--color-text-primary)" strokeWidth="12" strokeDasharray="440" initial={{strokeDashoffset: 440}} animate={{strokeDashoffset: 440 - (440 * 0.72)}} transition={{duration: 1.5, ease: "easeOut", delay:0.2}} strokeLinecap="round" />
+                <circle cx="80" cy="80" r="70" fill="none" stroke="var(--color-surface-2)" strokeWidth="12" />
+                <motion.circle cx="80" cy="80" r="70" fill="none" stroke="var(--color-accent-cyan)" strokeWidth="12" strokeDasharray="440" initial={{strokeDashoffset: 440}} animate={{strokeDashoffset: 440 - (440 * 0.72)}} transition={{duration: 1.5, ease: "easeOut", delay:0.2}} strokeLinecap="round" />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-bold text-data text-[--color-text-primary]">72%</span>
@@ -164,10 +164,10 @@ export function AwisGrid() {
           <div className="flex flex-col space-y-6 h-full justify-center">
             <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center space-x-4">
               <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 shadow-[0_0_15px_rgba(52,211,153,0.2)]">
-                <HeartPulse className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />
+                <HeartPulse className="w-6 h-6 text-emerald-500" />
               </div>
               <div>
-                <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">Low Risk</div>
+                <div className="text-xl font-bold text-emerald-600">Low Risk</div>
                 <div className="text-sm text-[--color-text-secondary]">Cognitive load is perfectly stable</div>
               </div>
             </div>
@@ -181,7 +181,7 @@ export function AwisGrid() {
                   <span className="text-[--color-text-primary] font-medium">{item.label}</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-[--color-text-secondary] text-data">{item.val}</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{item.status}</span>
+                    <span className="text-emerald-600 font-semibold">{item.status}</span>
                   </div>
                 </div>
               ))}
@@ -226,9 +226,9 @@ export function AwisGrid() {
       case 8: // Project Fit
         return (
           <div className="flex flex-col items-center justify-center h-full">
-            <div className="w-36 h-36 rounded-full border-8 border-[--color-surface-1] flex items-center justify-center relative shadow-[0_0_40px_rgba(0,0,0,0.05)] dark:shadow-[0_0_40px_rgba(255,255,255,0.02)] mb-8">
-              <motion.div initial={{scale:0, rotate:-90}} animate={{scale:1, rotate:0}} transition={{type:"spring", bounce:0.5, duration:1}} className="absolute inset-[-8px] rounded-full border-8 border-[--color-text-primary] border-t-[--color-accent-cyan] border-r-[--color-accent-lime] border-b-transparent border-l-transparent" />
-              <Target className="w-10 h-10 text-[--color-text-primary]" />
+            <div className="w-36 h-36 rounded-full border-8 border-[--color-surface-2] flex items-center justify-center relative shadow-[0_0_40px_rgba(0,0,0,0.05)] mb-8">
+              <motion.div initial={{scale:0, rotate:-90}} animate={{scale:1, rotate:0}} transition={{type:"spring", bounce:0.5, duration:1}} className="absolute inset-[-8px] rounded-full border-8 border-[--color-border-strong] border-t-[--color-accent-cyan] border-r-[--color-accent-lime] border-b-transparent border-l-transparent" />
+              <Target className="w-10 h-10 text-[--color-accent-cyan]" />
             </div>
             <div className="text-center">
               <div className="text-5xl font-bold text-data text-[--color-text-primary]">94.2<span className="text-2xl text-[--color-text-secondary]">%</span></div>

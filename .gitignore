@@ -1,0 +1,26 @@
+# Root .gitignore for NEXAWIS repository
+
+# Node & Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Python & Backend
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets & Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+*.log

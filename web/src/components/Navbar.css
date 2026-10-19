@@ -1,0 +1,128 @@
+.navbar-floating {
+  position: fixed;
+  top: 1.5rem;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  z-index: 100;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.navbar-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.navbar-logo {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+}
+
+.navbar-links {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.navbar-links a {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: var(--transition-fast);
+}
+
+.navbar-links a:hover {
+  color: var(--color-text-primary);
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.nav-login {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: var(--transition-fast);
+}
+
+.nav-login:hover {
+  color: var(--color-text-primary);
+}
+
+.mobile-menu-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: none;
+  padding: 0.25rem;
+}
+
+.desktop-only {
+  display: flex;
+}
+
+.mobile-only {
+  display: none;
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-menu-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  text-align: center;
+}
+
+.mobile-menu-content a {
+  font-size: 2rem;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .navbar-floating {
+    width: calc(100% - 2rem);
+    padding: 0.75rem 1.25rem;
+  }
+  
+  .navbar-container {
+    justify-content: space-between;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: block;
+  }
+}

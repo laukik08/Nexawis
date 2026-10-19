@@ -8,6 +8,13 @@ import { CustomCursor } from './components/CustomCursor';
 import { EmployeesIndex } from './pages/employees/EmployeesIndex';
 import { EmployeeProfile } from './pages/employees/EmployeeProfile';
 
+import { ProjectsIndex } from './pages/projects/ProjectsIndex';
+import { ProjectDetail } from './pages/projects/ProjectDetail';
+import { TeamFormationPage } from './pages/team-formation/TeamFormationPage';
+import { AnalyticsPage } from './pages/analytics/AnalyticsPage';
+import { ReportsPage } from './pages/reports/ReportsPage';
+import { SettingsPage } from './pages/settings/SettingsPage';
+
 // Product
 import { AwisIntelligence } from './pages/product/AwisIntelligence';
 import { NineDimensions } from './pages/product/NineDimensions';
@@ -78,11 +85,16 @@ function App() {
               <Route index element={<EmployeesIndex />} />
               <Route path=":id" element={<EmployeeProfile />} />
             </Route>
-            <Route path="projects" element={<div className="p-10">Projects Module Coming Soon</div>} />
-            <Route path="teams" element={<div className="p-10">Team Formation Module Coming Soon</div>} />
-            <Route path="analytics" element={<div className="p-10">Analytics Module Coming Soon</div>} />
-            <Route path="reports" element={<div className="p-10">Reports Module Coming Soon</div>} />
-            <Route path="settings" element={<div className="p-10">Settings Module Coming Soon</div>} />
+            <Route path="projects">
+              <Route index element={<ProjectsIndex />} />
+              <Route path=":id" element={<ProjectDetail />} />
+            </Route>
+            <Route path="teams" element={<TeamFormationPage />} />
+            <Route path="team-formation" element={<TeamFormationPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="settings/:section" element={<SettingsPage />} />
           </Route>
         </Route>
       </Routes>

@@ -1,0 +1,1 @@
+"""NEXAWIS Pydantic Schemas Module."""

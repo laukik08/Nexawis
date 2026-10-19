@@ -47,7 +47,7 @@ export function Footer() {
             </p>
             <button data-cursor="button" className="btn-accent px-8 py-4 rounded-full font-semibold flex items-center justify-center space-x-3 text-lg mx-auto group">
               <span>Request a Demo</span>
-              <div className="bg-black/10 dark:bg-white/10 rounded-full p-1.5 transition-transform duration-300 group-hover:translate-x-1">
+              <div className="bg-current/15 rounded-full p-1.5 transition-transform duration-300 group-hover:translate-x-1">
                 <ArrowRight className="w-4 h-4 text-current" />
               </div>
             </button>
@@ -63,7 +63,7 @@ export function Footer() {
           <div className="col-span-2 lg:col-span-2">
             <Link to="/" className="flex items-center space-x-2 mb-6 group inline-flex" data-cursor="link">
               <div className="transition-transform duration-300 group-hover:scale-105 rounded overflow-hidden flex items-center justify-center">
-                <img src="/logo.png" alt="NEXAWIS" className="w-10 h-10 object-contain brightness-0 invert dark:brightness-100 dark:invert-0 opacity-90" />
+                <img src="/logo.png" alt="NEXAWIS" className="w-10 h-10 object-contain opacity-90" />
               </div>
               <span className="text-xl font-bold tracking-tight text-[--color-text-primary]">NEXAWIS</span>
             </Link>

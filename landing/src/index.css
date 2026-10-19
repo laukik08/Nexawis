@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@import "tailwindcss";
+
+/* ─── Design Tokens ─── */
+:root {
+  /* Backgrounds */
+  --bg-primary: #FAFAF9;
+  --bg-secondary: #F5F5F3;
+  --bg-elevated: #FFFFFF;
+  --surface-dark: #1C1C1A;
+  --surface-darker: #141413;
+
+  /* Text */
+  --text-primary: #1C1C1A;
+  --text-secondary: #6B6B66;
+  --text-tertiary: #9C9C96;
+  --text-on-dark: #FAFAF9;
+  --text-muted-on-dark: #A8A8A3;
+
+  /* Accent — signal green, reserved for scores/CTAs/status */
+  --accent: #2D7A4F;
+  --accent-light: #E8F5ED;
+  --accent-hover: #246840;
+  --accent-subtle: #2D7A4F1A;
+
+  /* Warning — burnout risk */
+  --warning: #C4641D;
+  --warning-light: #FFF3E8;
+
+  /* Borders */
+  --border: #E5E5E3;
+  --border-subtle: #EDEDEB;
+  --border-dark: #2E2E2C;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(28,28,26,0.04);
+  --shadow-md: 0 4px 12px rgba(28,28,26,0.06);
+  --shadow-lg: 0 12px 32px rgba(28,28,26,0.08);
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Z-index scale */
+  --z-base: 0;
+  --z-elevated: 10;
+  --z-sticky: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+}
+
+/* ─── Base Reset & Styles ─── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  overflow-x: hidden;
+}
+
+/* ─── Typography ─── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.font-display {
+  font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+}
+
+.font-body {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Type scale */
+.text-display-xl {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.text-display-lg {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.text-display-md {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.text-heading-lg {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.text-heading-md {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.text-body-lg {
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.text-body {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.text-caption {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.text-mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.text-mono-lg {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.text-mono-xl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+/* ─── Focus Ring Utility ─── */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ─── Selection ─── */
+::selection {
+  background-color: var(--accent-light);
+  color: var(--text-primary);
+}
+
+/* ─── Reduced Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Smooth scrollbar ─── */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}

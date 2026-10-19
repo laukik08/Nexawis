@@ -1,0 +1,118 @@
+.hero-section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: var(--space-24);
+  padding-bottom: var(--space-24);
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+
+.hero-canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: auto; /* Let clicks pass to threeui for interaction */
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 900px;
+  pointer-events: none; /* Let clicks pass through content to canvas where possible */
+}
+
+.hero-content > * {
+  pointer-events: auto;
+}
+
+.hero-eyebrow {
+  margin-bottom: var(--space-6);
+  background: var(--color-bg-elevated);
+}
+
+.hero-title {
+  margin-bottom: var(--space-6);
+  color: var(--color-text-primary);
+}
+
+.text-accent {
+  color: var(--color-accent);
+}
+
+.hero-subtitle {
+  max-width: 600px;
+  margin: 0 auto var(--space-12);
+  color: var(--color-text-secondary);
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  padding: var(--space-3) var(--space-6) var(--space-3) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  font-size: 1rem;
+  border: 1px solid var(--color-border);
+  transition: var(--transition-fast);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.btn-secondary:hover {
+  background: var(--color-bg-elevated-hover);
+  transform: scale(0.98);
+}
+
+.play-icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+  border-radius: var(--radius-pill);
+  transition: var(--transition-fast);
+}
+
+.btn-secondary:hover .play-icon-circle {
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: clamp(2.5rem, 10vw, 3.5rem);
+  }
+  
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .hero-actions button,
+  .hero-actions > div { /* Target TactileButton wrapper if needed */
+    width: 100%;
+    justify-content: center;
+  }
+}

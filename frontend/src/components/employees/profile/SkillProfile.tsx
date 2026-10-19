@@ -30,8 +30,8 @@ export function SkillProfile({ employee }: SkillProfileProps) {
                 </div>
                 <div className="h-2 w-full bg-[--color-surface-2] rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-[--color-accent-cyan] rounded-full"
-                    style={{ width: `${skill.proficiency}%` }}
+                    className="h-full bg-accent-cyan rounded-full"
+                    style={{ width: `${skill.proficiency}%`, backgroundColor: 'var(--color-accent-cyan)' }}
                   />
                 </div>
               </div>
@@ -52,8 +52,8 @@ export function SkillProfile({ employee }: SkillProfileProps) {
                   </div>
                   <div className="h-1.5 w-full bg-[--color-surface-2] rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-[--color-text-primary] rounded-full opacity-60"
-                      style={{ width: `${skill.proficiency}%` }}
+                      className="h-full bg-accent-lime rounded-full"
+                      style={{ width: `${skill.proficiency}%`, backgroundColor: 'var(--color-accent-lime)' }}
                     />
                   </div>
                 </div>

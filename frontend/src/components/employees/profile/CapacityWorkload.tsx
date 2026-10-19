@@ -26,7 +26,7 @@ export function CapacityWorkload({ employee }: CapacityWorkloadProps) {
       
       {/* Capacity Bar */}
       <div className="h-4 w-full bg-[--color-surface-2] rounded-full overflow-hidden mb-8 flex border border-[--color-border-subtle]">
-        <div className="h-full bg-[--color-accent-lime] transition-all" style={{ width: `${isOverloaded ? 100 - overPercent : utilizedPercent}%` }} />
+        <div className="h-full bg-accent-lime transition-all" style={{ width: `${isOverloaded ? 100 - overPercent : utilizedPercent}%`, backgroundColor: 'var(--color-accent-lime)' }} />
         {isOverloaded && (
           <div className="h-full bg-red-400 transition-all" style={{ width: `${overPercent}%` }} />
         )}

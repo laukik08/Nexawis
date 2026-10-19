@@ -87,18 +87,50 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           </AnimatePresence>
         </button>
 
-        {/* User Profile */}
-        <div className="relative" ref={dropdownRef}>
+        {/* User Profile - Attached and Routed to Profile in Settings */}
+        <div className="relative flex items-center" ref={dropdownRef}>
+          {/* Main Profile Icon & Name Button -> Navigates directly to Profile in Settings */}
           <button 
-            onClick={() => setProfileOpen(!profileOpen)}
-            className="flex items-center space-x-2 p-1 rounded-full border border-transparent hover:border-[--color-border-strong] hover:bg-[--color-surface-2] transition-colors pl-1 pr-3 group"
+            onClick={() => navigate('/app/settings?section=profile')}
+            className="flex items-center space-x-2.5 p-1 rounded-full border border-transparent hover:border-[--color-border-strong] hover:bg-[--color-surface-2] transition-colors pl-1 pr-2 cursor-pointer group"
+            title="Open Profile in Settings"
           >
-            <img 
-              src={user?.avatarUrl || "https://ui-avatars.com/api/?name=User&background=random"} 
-              alt="Profile" 
-              className="w-8 h-8 rounded-full border border-[--color-border-subtle]"
-            />
-            <ChevronDown className="w-4 h-4 text-[--color-text-secondary] group-hover:text-[--color-text-primary] transition-colors" />
+            {user?.avatarUrl ? (
+              <img 
+                src={user.avatarUrl} 
+                alt={user?.name || "Profile"} 
+                className="w-8 h-8 rounded-full object-cover border border-[--color-border-subtle] group-hover:border-[var(--color-accent-cyan)] transition-colors"
+              />
+            ) : (
+              <div 
+                className="w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs transition-colors shadow-xs"
+                style={{
+                  backgroundColor: 'var(--color-surface-2)',
+                  borderColor: 'var(--color-accent-cyan)',
+                  color: 'var(--color-accent-cyan)'
+                }}
+              >
+                {user?.avatarInitials || (user?.name ? user.name.slice(0, 2).toUpperCase() : 'AR')}
+              </div>
+            )}
+            <div className="hidden sm:flex flex-col text-left">
+              <span className="text-xs font-bold text-[--color-text-primary] max-w-[120px] truncate group-hover:text-[var(--color-accent-cyan)] transition-colors">
+                {user?.name || "Alex Rivera"}
+              </span>
+              <span className="text-[10px] text-[--color-text-muted] max-w-[120px] truncate leading-tight">
+                {user?.title || "Workforce Architect"}
+              </span>
+            </div>
+          </button>
+
+          {/* Dropdown Chevron Trigger */}
+          <button
+            onClick={() => setProfileOpen(!profileOpen)}
+            className="p-1 rounded-full text-[--color-text-secondary] hover:text-[--color-text-primary] hover:bg-[--color-surface-2] transition-colors cursor-pointer ml-0.5"
+            title="Profile & account options"
+            aria-label="Toggle user options menu"
+          >
+            <ChevronDown className="w-3.5 h-3.5" />
           </button>
 
           {/* Profile Dropdown */}
@@ -109,20 +141,73 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 mt-2 w-56 bg-[var(--color-surface-1)] shadow-xl border border-[var(--color-border-strong)] rounded-2xl py-2 z-50 origin-top-right overflow-hidden"
+                className="absolute right-0 mt-2 w-64 bg-[var(--color-surface-1)] shadow-xl border border-[var(--color-border-strong)] rounded-2xl py-2 z-50 origin-top-right overflow-hidden top-full"
               >
-                <div className="px-4 py-3 border-b border-[--color-border-subtle] mb-1 bg-[--color-surface-2]/50">
-                  <div className="font-bold text-[--color-text-primary] truncate">{user?.name || "User"}</div>
-                  <div className="text-xs text-[--color-text-secondary] truncate">{user?.email || "user@example.com"}</div>
+                {/* Header Card -> Routes to Profile in Settings */}
+                <div 
+                  onClick={() => {
+                    setProfileOpen(false);
+                    navigate('/app/settings?section=profile');
+                  }}
+                  className="px-4 py-3 border-b border-[--color-border-subtle] mb-1 bg-[--color-surface-2]/60 cursor-pointer hover:bg-[--color-surface-2] transition-colors group"
+                  title="Click to view and edit Profile in Settings"
+                >
+                  <div className="flex items-center gap-2.5">
+                    {user?.avatarUrl ? (
+                      <img 
+                        src={user.avatarUrl} 
+                        alt={user?.name || "Profile"} 
+                        className="w-9 h-9 rounded-xl object-cover border border-[--color-border-subtle]"
+                      />
+                    ) : (
+                      <div 
+                        className="w-9 h-9 rounded-xl border flex items-center justify-center font-bold text-xs"
+                        style={{
+                          backgroundColor: 'var(--color-surface-2)',
+                          borderColor: 'var(--color-accent-cyan)',
+                          color: 'var(--color-accent-cyan)'
+                        }}
+                      >
+                        {user?.avatarInitials || 'AR'}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-xs text-[--color-text-primary] truncate group-hover:text-[var(--color-accent-cyan)] transition-colors">
+                        {user?.name || "Alex Rivera"}
+                      </div>
+                      <div className="text-[11px] text-[--color-text-secondary] truncate">
+                        {user?.title || "Principal Workforce Architect"}
+                      </div>
+                      <div className="text-[10px] text-[--color-text-muted] truncate font-mono mt-0.5">
+                        {user?.email || "alex@nexawis.com"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-[10px] font-semibold text-[var(--color-accent-cyan)] flex items-center gap-1">
+                    <span>Manage Profile in Settings</span>
+                    <span>→</span>
+                  </div>
                 </div>
                 
-                <button className="w-full text-left px-4 py-2 text-sm text-[--color-text-secondary] hover:text-[--color-text-primary] hover:bg-[--color-surface-2] flex items-center transition-colors">
-                  <UserIcon className="w-4 h-4 mr-3" />
-                  Profile
+                <button 
+                  onClick={() => {
+                    setProfileOpen(false);
+                    navigate('/app/settings?section=profile');
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs font-semibold text-[--color-text-secondary] hover:text-[--color-text-primary] hover:bg-[--color-surface-2] flex items-center transition-colors cursor-pointer"
+                >
+                  <UserIcon className="w-4 h-4 mr-3 text-[var(--color-accent-cyan)]" />
+                  <span>Profile Settings</span>
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-[--color-text-secondary] hover:text-[--color-text-primary] hover:bg-[--color-surface-2] flex items-center transition-colors">
-                  <Settings className="w-4 h-4 mr-3" />
-                  Account Settings
+                <button 
+                  onClick={() => {
+                    setProfileOpen(false);
+                    navigate('/app/settings?section=account');
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs font-semibold text-[--color-text-secondary] hover:text-[--color-text-primary] hover:bg-[--color-surface-2] flex items-center transition-colors cursor-pointer"
+                >
+                  <Settings className="w-4 h-4 mr-3 text-purple-400" />
+                  <span>Account Preferences</span>
                 </button>
                 
                 <div className="h-px bg-[--color-border-subtle] my-1" />

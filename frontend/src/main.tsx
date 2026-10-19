@@ -5,12 +5,15 @@ import App from './App.tsx'
 
 import { ThemeProvider } from './context/ThemeContext.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
+import { ProjectsProvider } from './context/ProjectsContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
       <ThemeProvider>
-        <App />
+        <ProjectsProvider>
+          <App />
+        </ProjectsProvider>
       </ThemeProvider>
     </AuthProvider>
   </StrictMode>,

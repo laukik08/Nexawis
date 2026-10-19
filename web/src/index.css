@@ -1,0 +1,200 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Color Palette - Editorial Luxury / Soft Structuralism (Light Mode) */
+  --color-bg: #FDFDFD;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-elevated-hover: #F9FAFB;
+  
+  --color-text-primary: #09090B;
+  --color-text-secondary: #52525B;
+  --color-text-muted: #A1A1AA;
+  
+  --color-border: #E4E4E7;
+  --color-border-subtle: #F4F4F5;
+  
+  --color-accent: #6366F1; /* Indigo */
+  --color-accent-secondary: #EC4899; /* Pink */
+
+  /* Typography */
+  --font-primary: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+  --space-40: 10rem;
+  
+  /* Radii */
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+  --radius-pill: 9999px;
+
+  /* Custom cubic bezier for physical motion */
+  --transition-physics: all 700ms cubic-bezier(0.32, 0.72, 0, 1);
+  --transition-fast: all 300ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Double-Bezel Card Outer Shell */
+.card-shell {
+  background: var(--color-border-subtle);
+  border: 1px solid var(--color-border);
+  padding: var(--space-2);
+  border-radius: var(--radius-xl);
+  /* Optional: soft outer shadow */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+/* Double-Bezel Card Inner Core */
+.card-core {
+  background: var(--color-bg-elevated);
+  border-radius: calc(var(--radius-xl) - var(--space-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1);
+  height: 100%;
+  padding: var(--space-6);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Button-in-Button Architecture (Not strictly needed if using threeui's buttons, but keeping for fallback) */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: var(--transition-fast);
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.btn-primary:hover {
+  transform: scale(0.98);
+}
+
+.btn-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-pill);
+  margin-right: calc(var(--space-2) * -1);
+  transition: var(--transition-fast);
+}
+
+.btn-primary:hover .btn-icon-wrapper {
+  transform: translate(2px, -1px) scale(1.05);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Typography styles */
+.text-hero {
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.text-h2 {
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.text-body {
+  font-size: 1.125rem;
+  color: var(--color-text-secondary);
+}
+
+.eyebrow {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-weight: 600;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+/* Utilities */
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.section-spacing {
+  padding-top: var(--space-32);
+  padding-bottom: var(--space-32);
+}
+
+.glow-orb {
+  position: absolute;
+  width: 60vw;
+  height: 60vw;
+  max-width: 800px;
+  max-height: 800px;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: -1;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+/* Responsive grid fallbacks */
+.grid-bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-6);
+}
+
+@media (max-width: 768px) {
+  .grid-bento {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+  
+  .section-spacing {
+    padding-top: var(--space-16);
+    padding-bottom: var(--space-16);
+  }
+}

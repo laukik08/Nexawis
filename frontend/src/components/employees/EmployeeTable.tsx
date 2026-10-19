@@ -128,7 +128,7 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
                     <span className="font-bold text-[var(--color-text-primary)]">{emp.performanceScore}</span>
                   </div>
                   <div className="w-full h-1.5 bg-[var(--color-surface-2)] rounded-full overflow-hidden border border-[var(--color-border-subtle)]">
-                    <div className="h-full bg-[var(--color-text-primary)] rounded-full" style={{ width: `${emp.performanceScore}%` }} />
+                    <div className="h-full bg-accent-cyan rounded-full" style={{ width: `${emp.performanceScore}%`, backgroundColor: 'var(--color-accent-cyan)' }} />
                   </div>
                 </div>
               </td>
@@ -140,7 +140,7 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
                     <span className="font-bold text-[var(--color-text-primary)]">{emp.availabilityScore}%</span>
                   </div>
                   <div className="w-full h-1.5 bg-[var(--color-surface-2)] rounded-full overflow-hidden border border-[var(--color-border-subtle)]">
-                    <div className="h-full bg-[var(--color-accent-lime)] rounded-full" style={{ width: `${emp.availabilityScore}%` }} />
+                    <div className="h-full bg-accent-lime rounded-full" style={{ width: `${emp.availabilityScore}%`, backgroundColor: 'var(--color-accent-lime)' }} />
                   </div>
                 </div>
               </td>

@@ -65,7 +65,7 @@ export function TeamFormation() {
                     {/* Simplified network graph visualization */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-[--color-surface-1] border-2 border-[--color-accent-cyan] rounded-full flex items-center justify-center z-10 shadow-lg">Lead</div>
                     <div className="absolute bottom-4 left-0 w-12 h-12 bg-[--color-surface-1] border-2 border-[--color-accent-lime] rounded-full flex items-center justify-center z-10 shadow-lg">Dev</div>
-                    <div className="absolute bottom-4 right-0 w-12 h-12 bg-[--color-surface-1] border-2 border-[--color-text-primary] rounded-full flex items-center justify-center z-10 shadow-lg">UX</div>
+                    <div className="absolute bottom-4 right-0 w-12 h-12 bg-[--color-surface-1] border-2 border-[--color-accent-cyan] rounded-full flex items-center justify-center z-10 shadow-lg">UX</div>
                     
                     {/* Connecting lines */}
                     <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>

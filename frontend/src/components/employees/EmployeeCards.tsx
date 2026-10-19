@@ -51,7 +51,7 @@ export function EmployeeCards({ employees }: EmployeeCardsProps) {
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-[--color-text-primary]">{emp.performanceScore}</span>
                 <div className="w-12 h-1 bg-[--color-surface-2] rounded-full overflow-hidden border border-[--color-border-subtle]">
-                  <div className="h-full bg-[--color-text-primary]" style={{ width: `${emp.performanceScore}%` }} />
+                  <div className="h-full rounded-full bg-accent-cyan" style={{ width: `${emp.performanceScore}%`, backgroundColor: 'var(--color-accent-cyan)' }} />
                 </div>
               </div>
             </div>
@@ -60,7 +60,7 @@ export function EmployeeCards({ employees }: EmployeeCardsProps) {
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-[--color-text-primary]">{emp.availabilityScore}%</span>
                 <div className="w-12 h-1 bg-[--color-surface-2] rounded-full overflow-hidden border border-[--color-border-subtle]">
-                  <div className="h-full bg-[--color-accent-lime]" style={{ width: `${emp.availabilityScore}%` }} />
+                  <div className="h-full rounded-full bg-accent-lime" style={{ width: `${emp.availabilityScore}%`, backgroundColor: 'var(--color-accent-lime)' }} />
                 </div>
               </div>
             </div>

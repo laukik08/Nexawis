@@ -21,8 +21,8 @@ export function PublicLayout() {
         
         {/* GLOBAL AMBIENT BACKGROUNDS */}
         <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-          <div className="absolute top-[20%] right-[-10%] w-[50vw] h-[50vw] md:w-[600px] md:h-[600px] bg-[--color-accent-cyan] rounded-full blur-[150px] opacity-[0.03] dark:opacity-[0.02]" />
-          <div className="absolute bottom-[20%] left-[-10%] w-[50vw] h-[50vw] md:w-[600px] md:h-[600px] bg-[--color-accent-lime] rounded-full blur-[150px] opacity-[0.03] dark:opacity-[0.01]" />
+          <div className="absolute top-[20%] right-[-10%] w-[50vw] h-[50vw] md:w-[600px] md:h-[600px] bg-[--color-accent-cyan] rounded-full blur-[150px] opacity-[0.03]" />
+          <div className="absolute bottom-[20%] left-[-10%] w-[50vw] h-[50vw] md:w-[600px] md:h-[600px] bg-[--color-accent-lime] rounded-full blur-[150px] opacity-[0.03]" />
         </div>
         
         <main className="flex-1 relative z-10">

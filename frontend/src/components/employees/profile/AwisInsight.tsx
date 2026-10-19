@@ -18,10 +18,13 @@ export function AwisInsight({ employee }: AwisInsightProps) {
       <div className="flex flex-col lg:flex-row gap-8 mb-8">
         
         {/* Core Score */}
-        <div className="relative w-32 h-32 shrink-0 mx-auto lg:mx-0 flex flex-col items-center justify-center rounded-full bg-[--color-surface-1] border-[4px] border-[--color-accent-cyan] shadow-[0_0_30px_rgba(2,132,199,0.15)]">
-          <Hexagon className="absolute inset-0 w-full h-full text-[--color-accent-cyan] opacity-10 transform scale-125 stroke-[1]" />
-          <span className="text-4xl font-display font-bold text-[--color-text-primary] z-10">{employee.awisFitScore}</span>
-          <span className="text-[10px] uppercase tracking-widest text-[--color-text-secondary] mt-1 z-10 font-bold">Fit Score</span>
+        <div 
+          className="relative w-32 h-32 shrink-0 mx-auto lg:mx-0 flex flex-col items-center justify-center rounded-full bg-[var(--color-surface-1)] border-[4px] shadow-[0_0_30px_rgba(2,132,199,0.25)]"
+          style={{ borderColor: 'var(--color-accent-cyan)' }}
+        >
+          <Hexagon className="absolute inset-0 w-full h-full opacity-20 transform scale-125 stroke-[1.5]" style={{ color: 'var(--color-accent-cyan)' }} />
+          <span className="text-4xl font-display font-bold text-[var(--color-text-primary)] z-10">{employee.awisFitScore}</span>
+          <span className="text-[10px] uppercase tracking-widest text-[var(--color-text-secondary)] mt-1 z-10 font-bold">Fit Score</span>
         </div>
 
         {/* Explainability Factors */}

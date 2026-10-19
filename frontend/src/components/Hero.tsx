@@ -28,17 +28,17 @@ export function Hero() {
     <div className="relative min-h-[900px] lg:min-h-screen pt-32 lg:pt-40 pb-20 flex flex-col items-center justify-center overflow-hidden w-full">
         
         {/* 
-          DEEP TEAL HERO BACKGROUND
-          Static deep teal gradient that fades to transparent so the background color transition works perfectly.
+          HERO BACKGROUND
+          Uses theme tokens so it dynamically fits light teal/white in light theme, and deep teal/navy in dark theme.
         */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0d1a20] via-[#12242c] to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[--color-surface-2]/60 via-[--color-bg-base] to-transparent" />
           
-          {/* Ambient Teal Glow */}
+          {/* Ambient Glow */}
           <motion.div 
             animate={{ x: ["-5%", "5%", "-5%"], y: ["-5%", "5%", "-5%"] }}
             transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="absolute top-1/4 left-1/4 w-[60vw] h-[60vw] md:w-[800px] md:h-[800px] bg-[#1a3845] rounded-full blur-[120px] opacity-40" 
+            className="absolute top-1/4 left-1/4 w-[60vw] h-[60vw] md:w-[800px] md:h-[800px] bg-[--color-accent-cyan]/10 rounded-full blur-[140px] pointer-events-none" 
           />
         </div>
 
@@ -68,12 +68,12 @@ export function Hero() {
               variants={headingVariants}
               initial="hidden"
               animate="visible"
-              className="text-display text-5xl md:text-6xl lg:text-6xl text-white mb-6"
+              className="text-display text-5xl md:text-6xl lg:text-6xl text-[--color-text-primary] mb-6"
             >
               <motion.div variants={lineVariants} className="overflow-hidden pb-1">
                 Build Adaptive &
               </motion.div>
-              <motion.div variants={lineVariants} className="overflow-hidden pb-1 text-force-muted">
+              <motion.div variants={lineVariants} className="overflow-hidden pb-1 text-[--color-text-secondary]">
                 Intelligence-Backed
               </motion.div>
               <motion.div variants={lineVariants} className="overflow-hidden pb-1">
@@ -86,7 +86,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="text-body text-lg md:text-xl text-force-muted max-w-xl mb-12"
+              className="text-body text-lg md:text-xl text-[--color-text-secondary] max-w-xl mb-12"
             >
               Get stable delivery by forming perfectly balanced teams. Predict burnout, optimize workload, and build for sustainable success with transparent AI.
             </motion.p>
@@ -100,15 +100,15 @@ export function Hero() {
             >
               <button className="w-full sm:w-auto btn-accent px-6 py-3.5 rounded-full font-semibold flex items-center justify-center space-x-3 group relative overflow-hidden">
                 <span className="relative z-10">Start Building</span>
-                <div className="bg-[--color-surface-1] rounded-full p-1.5 relative z-10 transition-transform duration-300 group-hover:translate-x-1">
-                  <ArrowUpRight className="w-3.5 h-3.5 text-[--color-accent-lime]" />
+                <div className="bg-current/15 rounded-full p-1.5 relative z-10 transition-transform duration-300 group-hover:translate-x-1">
+                  <ArrowUpRight className="w-3.5 h-3.5 text-current" />
                 </div>
                 {/* Subtle highlight overlay on hover */}
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
               </button>
               
-              <button className="w-full sm:w-auto card-base !bg-[#0d1a20]/40 !border-white/10 !py-3.5 !px-6 !rounded-full font-semibold text-white text-sm hover:bg-[#12242c] hover:border-white/20 transition-all flex items-center justify-center space-x-2 group">
-                <Play className="w-4 h-4 text-force-muted group-hover:text-[--color-accent-cyan] transition-colors" />
+              <button className="w-full sm:w-auto card-base !py-3.5 !px-6 !rounded-full font-semibold text-[--color-text-primary] text-sm hover:bg-[--color-surface-2] border border-[--color-border-strong] transition-all flex items-center justify-center space-x-2 group shadow-sm">
+                <Play className="w-4 h-4 text-[--color-text-secondary] group-hover:text-[--color-accent-cyan] transition-colors" />
                 <span>Explore AWIS Model</span>
               </button>
             </motion.div>
@@ -245,9 +245,9 @@ export function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2, duration: 1 }}
-          className="text-label mb-6 border-b border-white/10 dark:border-[--color-border-subtle] pb-4 flex items-center justify-between"
+          className="text-label mb-6 border-b border-[--color-border-subtle] pb-4 flex items-center justify-between"
         >
-          <span className="text-force-muted">System Metrics</span>
+          <span className="text-[--color-text-secondary]">System Metrics</span>
           <span className="flex items-center space-x-2 text-[--color-accent-cyan]">
             <span className="w-2 h-2 rounded-full bg-[--color-accent-cyan] animate-pulse" />
             <span>Live Data</span>

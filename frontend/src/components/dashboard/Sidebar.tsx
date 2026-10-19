@@ -54,7 +54,9 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       {/* Navigation Links */}
       <nav className="flex-1 overflow-y-auto py-8 px-4 space-y-3">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.path === '/app'
+            ? location.pathname === '/app'
+            : location.pathname.startsWith(item.path);
           return (
             <Link
               key={item.name}

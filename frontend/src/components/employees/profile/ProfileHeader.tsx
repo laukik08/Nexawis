@@ -71,7 +71,7 @@ export function ProfileHeader({ employee }: ProfileHeaderProps) {
             <MessageSquare className="w-4 h-4" />
             <span>Message</span>
           </button>
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-[--color-text-primary] text-[--color-bg-base] hover:bg-[--color-text-secondary] rounded-xl font-bold transition-colors shadow-lg shadow-[--color-text-primary]/10">
+          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 btn-primary rounded-xl font-bold">
             <Mail className="w-4 h-4" />
             <span>Assign</span>
           </button>

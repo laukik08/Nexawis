@@ -56,7 +56,7 @@ export function AiEngines() {
                     <div className="text-xs text-[--color-text-secondary]">Senior Developer</div>
                   </div>
                 </div>
-                <div className="bg-rose-500/20 text-rose-300 px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1 border border-rose-500/30">
+                <div className="bg-rose-500/15 text-rose-500 px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1 border border-rose-500/30">
                   <AlertTriangle className="w-3 h-3" />
                   <span>High Risk</span>
                 </div>
@@ -106,7 +106,7 @@ export function AiEngines() {
                   initial={{ opacity: 0, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 1.2 }}
-                  className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 text-sm text-rose-200 flex items-start space-x-2"
+                  className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 text-sm text-[--color-text-primary] flex items-start space-x-2"
                 >
                   <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-rose-400" />
                   <span>Recommendation: Immediate reassignment or mandatory leave required to prevent burnout.</span>

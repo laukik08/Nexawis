@@ -6,7 +6,10 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  title?: string;
+  department?: string;
   avatarUrl?: string;
+  avatarInitials?: string;
 }
 
 interface AuthContextType {
@@ -14,19 +17,22 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (updated: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // MOCK: Auto-login as 'Alex' to support the dashboard build phase.
-  // In a real app, this would start as null and verify a session token via API.
+  // Initial profile synced with settings module defaults
   const [user, setUser] = useState<User | null>({
     id: 'mock-user-1',
-    name: 'Alex',
+    name: 'Alex Rivera',
     email: 'alex@nexawis.com',
-    role: 'admin',
-    avatarUrl: 'https://ui-avatars.com/api/?name=Alex&background=random'
+    role: 'Enterprise Administrator',
+    title: 'Principal Workforce Architect',
+    department: 'Data & AI',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    avatarInitials: 'AR'
   });
   
   const [loading, setLoading] = useState(false);
@@ -39,6 +45,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Listen to profile updates emitted by settingsService
+  useEffect(() => {
+    const handleProfileUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail) {
+        setUser(prev => prev ? { ...prev, ...customEvent.detail } : null);
+      }
+    };
+
+    window.addEventListener('nexawis:profile_updated', handleProfileUpdated);
+    return () => window.removeEventListener('nexawis:profile_updated', handleProfileUpdated);
+  }, []);
+
+  const updateUser = (updated: Partial<User>) => {
+    setUser(prev => prev ? { ...prev, ...updated } : null);
+  };
 
   const login = async (email: string) => {
     setLoading(true);
@@ -65,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

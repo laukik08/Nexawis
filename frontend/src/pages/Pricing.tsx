@@ -48,7 +48,7 @@ export function Pricing() {
                 : 'bg-[--color-surface-1] border border-[--color-border-subtle]'
             }`}>
               {plan.popular && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[--color-accent-lime] text-[--color-bg-base] text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[--color-accent-lime] text-[--color-text-inverse] text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full shadow-sm">
                   Most Popular
                 </div>
               )}
@@ -71,8 +71,8 @@ export function Pricing() {
               
               <button className={`w-full py-4 rounded-xl font-bold flex items-center justify-center space-x-2 transition-all duration-300 ${
                 plan.popular 
-                  ? 'btn-accent text-[--color-bg-base]' 
-                  : 'bg-[--color-surface-2] hover:bg-white hover:text-black border border-[--color-border-strong] text-[--color-text-primary]'
+                  ? 'btn-accent text-[--color-text-inverse]' 
+                  : 'bg-[--color-surface-2] hover:bg-[--color-surface-1] border border-[--color-border-strong] text-[--color-text-primary]'
               }`}>
                 <span>{plan.buttonText}</span>
                 <ArrowRight className="w-4 h-4" />

@@ -50,11 +50,43 @@ html[data-theme="dark"] {
 
     --shadow-premium-soft: 0 4px 20px rgba(0, 0, 0, 0.15);
     --shadow-premium-glow: 0 0 40px rgba(232, 243, 154, 0.15);
+
+    /* Aliases for reports & components */
+    --color-surface: #0a141a;
+    --color-surface-hover: #172d38;
+    --color-text: #ffffff;
+    --color-border: rgba(255, 255, 255, 0.15);
+    --color-teal-500: #22d3ee;
 }
 
 @layer base {
   :root {
     color-scheme: light dark;
+    --color-page-bg: #e2e8f0;
+    --color-bg-base: #e8f0f2;
+    --color-surface-1: #ffffff;
+    --color-surface-2: #f1f5f9;
+    
+    --color-text-primary: #061c24;
+    --color-text-secondary: #475569;
+    --color-text-muted: #94a3b8;
+    --color-text-inverse: #ffffff;
+    
+    --color-accent-lime: #16a34a;
+    --color-accent-cyan: #0284c7;
+    
+    --color-border-subtle: rgba(13, 26, 32, 0.08);
+    --color-border-strong: rgba(13, 26, 32, 0.15);
+
+    --shadow-premium-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --shadow-premium-glow: 0 0 40px rgba(2, 132, 199, 0.1);
+
+    /* Aliases for reports & components */
+    --color-surface: #ffffff;
+    --color-surface-hover: #f1f5f9;
+    --color-text: #061c24;
+    --color-border: rgba(13, 26, 32, 0.15);
+    --color-teal-500: #0284c7;
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -155,13 +187,13 @@ html[data-theme="dark"] {
     color: var(--color-text-secondary);
   }
 
-  /* Fixed light text for the deep teal Hero area in Light Theme */
+  /* Semantic mapping for text colors */
   .text-force-light {
-    color: #ffffff !important;
+    color: var(--color-text-primary) !important;
   }
   
   .text-force-muted {
-    color: #8db3bd !important;
+    color: var(--color-text-secondary) !important;
   }
 
   /* =========================================
@@ -193,9 +225,151 @@ html[data-theme="dark"] {
     transform: translateY(-3px);
     box-shadow: var(--shadow-premium-glow);
   }
+
+  /* Primary Action Button */
+  .btn-primary {
+    background-color: var(--color-accent-cyan) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.08) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35) !important;
+  }
+  .btn-primary:active {
+    transform: translateY(0px) !important;
+  }
+
+  /* Secondary Action Button */
+  .btn-secondary {
+    background-color: var(--color-surface-2) !important;
+    color: var(--color-text-primary) !important;
+    border: 1px solid var(--color-border-strong) !important;
+    border-radius: 0.75rem !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-secondary:hover {
+    background-color: var(--color-surface-1) !important;
+    border-color: var(--color-accent-cyan) !important;
+    color: var(--color-accent-cyan) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15) !important;
+  }
+  .btn-secondary:active {
+    transform: translateY(0px) !important;
+  }
+
+  .btn-accent {
+    background-color: var(--color-accent-lime) !important;
+    color: var(--color-text-inverse) !important;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease, box-shadow 0.3s ease !important;
+  }
+  .btn-accent:hover {
+    filter: brightness(1.08) !important;
+    transform: scale(1.02) !important;
+    box-shadow: 0 0 20px rgba(232, 243, 154, 0.2) !important;
+  }
+  .btn-accent:active {
+    transform: scale(0.98) !important;
+  }
 }
 
-@layer utilities {
+/* Core NEXAWIS Surface & Theme Utilities */
+  .bg-surface-1 {
+    background-color: var(--color-surface-1) !important;
+  }
+  .bg-surface-2 {
+    background-color: var(--color-surface-2) !important;
+  }
+  .bg-base {
+    background-color: var(--color-bg-base) !important;
+  }
+  .text-primary-color {
+    color: var(--color-text-primary) !important;
+  }
+  .text-secondary-color {
+    color: var(--color-text-secondary) !important;
+  }
+  .text-muted-color {
+    color: var(--color-text-muted) !important;
+  }
+  .border-subtle-color {
+    border-color: var(--color-border-subtle) !important;
+  }
+  .border-strong-color {
+    border-color: var(--color-border-strong) !important;
+  }
+
+  /* Primary Action Button */
+  .btn-primary {
+    background-color: var(--color-accent-cyan) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.08) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35) !important;
+  }
+  .btn-primary:active {
+    transform: translateY(0px) !important;
+  }
+
+  /* Accent utilities */
+  .bg-accent-cyan {
+    background-color: var(--color-accent-cyan) !important;
+  }
+  .bg-accent-lime {
+    background-color: var(--color-accent-lime) !important;
+  }
+  .border-accent-cyan {
+    border-color: var(--color-accent-cyan) !important;
+  }
+  .border-accent-lime {
+    border-color: var(--color-accent-lime) !important;
+  }
+  .text-accent-cyan {
+    color: var(--color-accent-cyan) !important;
+  }
+  .text-accent-lime {
+    color: var(--color-accent-lime) !important;
+  }
+
+  /* Status badge helpers */
+  .badge-active {
+    background-color: rgba(2, 132, 199, 0.12) !important;
+    border-color: rgba(2, 132, 199, 0.3) !important;
+    color: var(--color-accent-cyan) !important;
+  }
+  .badge-ontrack {
+    background-color: rgba(22, 163, 74, 0.12) !important;
+    border-color: rgba(22, 163, 74, 0.3) !important;
+    color: var(--color-accent-lime) !important;
+  }
+  .badge-planning {
+    background-color: var(--color-surface-2) !important;
+    border-color: var(--color-border-strong) !important;
+    color: var(--color-text-secondary) !important;
+  }
+  .badge-risk {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: #f87171 !important;
+  }
+
   /* =========================================
      4. LEGACY / MAPPED UTILITIES 
      (Preserved to prevent breaking existing components, 
@@ -267,5 +441,56 @@ html[data-theme="dark"] {
   .no-scrollbar {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Form Select & Option Opacity Fixes */
+  select {
+    background-color: var(--color-surface-2) !important;
+    color: var(--color-text-primary) !important;
+    border: 1px solid var(--color-border-strong) !important;
+  }
+  
+  select option {
+    background-color: var(--color-surface-1) !important;
+    color: var(--color-text-primary) !important;
+    padding: 8px 12px !important;
+  }
+
+
+/* Print Rules for Reports Module */
+@media print {
+  header.report-no-print,
+  .custom-cursor,
+  nav,
+  aside,
+  button,
+  .report-no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #report-printable-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .print\:break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 }

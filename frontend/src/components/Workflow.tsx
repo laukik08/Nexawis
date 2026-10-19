@@ -121,7 +121,7 @@ export function Workflow() {
                 >
                   <div className="flex justify-between items-center mb-6">
                     <div className="text-label text-[--color-text-secondary]">Roster Eligibility Filter</div>
-                    <div className="flex items-center gap-2 text-xs text-[--color-text-secondary bg-[--color-surface-2] px-3 py-1 rounded-full"><Search className="w-3 h-3"/> Filtering 1,204 employees</div>
+                    <div className="flex items-center gap-2 text-xs text-[--color-text-secondary] bg-[--color-surface-2] px-3 py-1 rounded-full"><Search className="w-3 h-3"/> Filtering 1,204 employees</div>
                   </div>
                   <div className="space-y-3">
                     {[

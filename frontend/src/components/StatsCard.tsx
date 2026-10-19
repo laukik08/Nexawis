@@ -45,7 +45,7 @@ export function StatsCard({ title, numericValue, suffix = '', prefix = '', decim
       initial={{ opacity: 0, y: 20 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
       transition={{ duration: 0.6, delay, type: "spring", stiffness: 80, damping: 20 }}
-      className="card-base !bg-[--color-surface-1]/60 backdrop-blur-xl border border-white/20 dark:border-[--color-border-subtle] p-6 flex flex-col items-start justify-between h-full w-full relative overflow-hidden group cursor-pointer hover:border-white/40 dark:hover:border-[--color-border-strong]"
+      className="card-base !bg-[--color-surface-1]/60 backdrop-blur-xl border border-[--color-border-subtle] p-6 flex flex-col items-start justify-between h-full w-full relative overflow-hidden group cursor-pointer hover:border-[--color-border-strong]"
     >
       {/* Subtle hover gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-[--color-surface-2]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />

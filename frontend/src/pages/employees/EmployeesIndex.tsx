@@ -30,7 +30,7 @@ export function EmployeesIndex() {
         <div className="flex items-center gap-3">
           <button 
             data-cursor="button"
-            className="flex items-center space-x-2 bg-[--color-text-primary] text-[--color-bg-base] hover:bg-[--color-text-secondary] px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-[--color-text-primary]/10"
+            className="flex items-center space-x-2 btn-primary px-6 py-2.5 rounded-xl font-bold"
           >
             <UserPlus className="w-4 h-4" />
             <span>Add Employee</span>
