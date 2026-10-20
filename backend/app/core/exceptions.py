@@ -89,6 +89,77 @@ class RateLimitExceededError(AppException):
         )
 
 
+class AuthenticationError(AppException):
+    """Raised when bearer token is missing, invalid, or unverified."""
+
+    def __init__(
+        self,
+        message: str = "Authentication required or token is invalid.",
+        code: str = "UNAUTHORIZED",
+        details: Optional[Any] = None,
+    ):
+        super().__init__(
+            message=message,
+            code=code,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            details=details,
+        )
+
+
+class InvalidTokenError(AuthenticationError):
+    """Raised when JWT token is malformed, has invalid signature, or wrong issuer/audience."""
+
+    def __init__(self, message: str = "Bearer token is invalid or malformed.", details: Optional[Any] = None):
+        super().__init__(
+            message=message,
+            code="INVALID_TOKEN",
+            details=details,
+        )
+
+
+class TokenExpiredError(AuthenticationError):
+    """Raised when JWT token has expired."""
+
+    def __init__(self, message: str = "Bearer token has expired.", details: Optional[Any] = None):
+        super().__init__(
+            message=message,
+            code="TOKEN_EXPIRED",
+            details=details,
+        )
+
+
+class AuthorizationError(AppException):
+    """Raised when an authenticated user does not have required roles or permissions."""
+
+    def __init__(
+        self,
+        message: str = "You do not have permission to perform this action.",
+        code: str = "FORBIDDEN",
+        details: Optional[Any] = None,
+    ):
+        super().__init__(
+            message=message,
+            code=code,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class WorkspaceAccessDeniedError(AuthorizationError):
+    """Raised when an authenticated user does not belong to the requested workspace."""
+
+    def __init__(
+        self,
+        message: str = "You do not have access to the specified workspace.",
+        details: Optional[Any] = None,
+    ):
+        super().__init__(
+            message=message,
+            code="WORKSPACE_ACCESS_DENIED",
+            details=details,
+        )
+
+
 def create_error_response(
     status_code: int,
     code: str,

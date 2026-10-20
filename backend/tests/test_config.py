@@ -72,3 +72,22 @@ def test_secret_str_masks_representation():
     assert "HiddenPassword123" not in str(cfg.DATABASE_URL)
     assert "very_secret_key" not in str(cfg.CLERK_SECRET_KEY)
     assert "**********" in str(cfg.DATABASE_URL)
+
+
+def test_db_components_with_special_characters_encoded():
+    """Verify separate DB config fields URL-encode passwords containing special characters."""
+    cfg = Settings(
+        DATABASE_URL=None,
+        DB_HOST="aws-0-ap-south-1.pooler.supabase.com",
+        DB_PORT=6543,
+        DB_USER="postgres.myproject",
+        DB_PASSWORD="p@ssword,with#symbols!",
+        DB_NAME="postgres",
+    )
+    async_url = cfg.get_async_database_url()
+    assert async_url is not None
+    # Ensure @ and , are URL-encoded in the password portion
+    assert "p%40ssword%2Cwith%23symbols%21" in async_url
+    assert "postgres.myproject:" in async_url
+    assert "@aws-0-ap-south-1.pooler.supabase.com:6543/postgres" in async_url
+

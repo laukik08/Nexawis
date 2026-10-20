@@ -1,4 +1,4 @@
-# NEXAWIS Backend — Phase 1: Secure Backend Foundation
+# NEXAWIS Backend — Architecture & Developer Guide
 
 The backend foundation for NEXAWIS (Adaptive Workforce Intelligence Framework for Sustainable Project Team Formation), built with **Python 3.13**, **FastAPI**, **SQLAlchemy 2.x (async)**, **Supabase PostgreSQL**, **Alembic**, and **Pydantic Settings**.
 
@@ -15,39 +15,59 @@ backend/
 ├── requirements-dev.txt      # Development & testing dependencies
 ├── alembic.ini               # Database migration configuration
 ├── alembic/
-│   ├── env.py                # Async migration runner (SQLAlchemy + asyncpg)
+│   ├── env.py                # Async migration runner (SQLAlchemy + asyncpg + Supabase Pooler)
 │   ├── script.py.mako        # Migration revision template
-│   └── versions/             # Migration versions directory
+│   └── versions/             # Migration revision versions (e.g. 087653b3400c_phase2_initial_schema.py)
 ├── app/
 │   ├── __init__.py
 │   ├── main.py               # FastAPI application, lifespan, CORS, and security middlewares
 │   ├── core/
 │   │   ├── __init__.py
+│   │   ├── clerk.py          # Cryptographic Clerk JWT verifier (JWKS / PEM)
 │   │   ├── config.py         # Pydantic Settings, environment validation, URL sanitization
 │   │   ├── database.py       # Async SQLAlchemy engine, session generator, health checker
 │   │   ├── exceptions.py     # Custom exceptions & centralized error JSON handlers
 │   │   ├── logging.py        # Structured logging with sensitive data redaction filter
-│   │   └── middleware.py     # Security headers, request size limiter, rate limiter
+│   │   ├── middleware.py     # Security headers, request size limiter, rate limiter
+│   │   └── roles.py          # PRD §3 RBAC roles and permissions matrix
+│   ├── models/               # SQLAlchemy 2.x Declarative Models (Phase 2)
+│   │   ├── __init__.py       # Model package re-exports
+│   │   ├── base.py           # DeclarativeBase, UUIDPrimaryKeyMixin, TimestampMixin, JSON_TYPE
+│   │   ├── workspace.py      # Workspace, WorkspaceMember, WorkspaceSettings (tenant isolation)
+│   │   ├── user.py           # User (Clerk auth linkage), UserPreference
+│   │   ├── skill.py          # Skill (normalized), EmployeeSkill (proficiency mappings)
+│   │   ├── employee.py       # Employee, EmployeeCertification, WorkloadHistory, PerformanceHistory
+│   │   ├── project.py        # Project, ProjectRequirement, ProjectMilestone, ProjectAllocation
+│   │   ├── team_formation.py # TeamFormation (runs/history), TeamFormationMember (recommendations)
+│   │   ├── ml_results.py     # AwisEvaluation, MlBurnoutPrediction, MlProjectSuccessPrediction
+│   │   └── report.py         # Report, ScheduledReport
 │   ├── schemas/
 │   │   ├── __init__.py
+│   │   ├── auth.py           # Authentication, profile synchronization, and workspace schemas
 │   │   ├── common.py         # Standardized error and response envelopes
 │   │   └── health.py         # Liveness and readiness diagnostic schemas
 │   └── api/
 │       ├── __init__.py
+│       ├── deps.py           # Authentication, workspace isolation, and RBAC guard dependencies
 │       └── v1/
 │           ├── __init__.py
 │           ├── router.py     # API v1 master router
 │           └── endpoints/
 │               ├── __init__.py
+│               ├── auth.py   # /auth/me, /auth/sync, /auth/workspaces endpoints
 │               └── health.py # /health, /health/db, and /health/ready endpoints
 └── tests/
     ├── __init__.py
-    ├── conftest.py           # Shared async fixtures (AsyncClient, test DB cleanup)
-    ├── test_config.py        # Settings validation, origin parsing, secret masking
-    ├── test_database.py      # Database engine lifecycle, session rollback, error safety
-    ├── test_exceptions.py    # Standardized 404/422/500 JSON, log redaction
-    ├── test_health.py        # Liveness, DB readiness, and combined probe tests
-    └── test_security.py      # CORS, security headers, size limits, rate limiting
+    ├── conftest.py                   # Shared async fixtures (AsyncClient, test DB cleanup)
+    ├── test_auth.py                  # Token verification, RBAC, tenant isolation, anti-spoofing
+    ├── test_config.py                # Settings validation, origin parsing, secret masking
+    ├── test_database.py              # Database engine lifecycle, session rollback, error safety
+    ├── test_database_models_async.py # Real SQLite async integration tests for all models
+    ├── test_exceptions.py            # Standardized 404/422/500 JSON, log redaction
+    ├── test_health.py                # Liveness, DB readiness, and combined probe tests
+    ├── test_models.py                # Model instantiation, metadata constraints, repr tests
+    └── test_security.py              # CORS, security headers, size limits, rate limiting
+
 ```
 
 ---
@@ -78,189 +98,204 @@ source .venv/bin/activate
 ### 1.2 Install Dependencies
 
 ```bash
-# Core dependencies:
+# Core runtime dependencies:
 pip install -r requirements.txt
 
-# Development and test dependencies:
+# Development and testing dependencies (includes aiosqlite, pytest-cov):
 pip install -r requirements-dev.txt
 ```
 
 ---
 
-## 2. Environment Configuration & Secrets Management
+## 2. Environment Configuration & Supabase Connectivity
 
 1. Copy `.env.example` to `.env`:
    ```bash
    cp .env.example .env
    ```
-2. Open `.env` and fill in the required parameters.
-   > **Important Security Rule:** The `.env` file contains sensitive secrets and is strictly ignored in `.gitignore`. **Never commit `.env` to Git.**
+2. Populate `.env` with your Supabase credentials:
 
-### Configuration Keys
+```ini
+ENVIRONMENT=development
+DEBUG=true
 
-| Parameter | Default | Description |
-|---|---|---|
-| `ENVIRONMENT` | `development` | Target environment: `development`, `testing`, `production` |
-| `DEBUG` | `false` | Debug mode (automatically forced `false` in production) |
-| `HOST` | `0.0.0.0` | Host interface to bind |
-| `PORT` | `8000` | Port to listen on |
-| `ALLOWED_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Comma-separated list of allowed frontend origins (CORS) |
-| `MAX_REQUEST_SIZE_BYTES` | `2097152` (2 MB) | Maximum accepted request payload size |
-| `RATE_LIMIT_PER_MINUTE` | `120` | Max requests per minute per IP for public endpoints |
-| `DATABASE_URL` | *(None)* | Supabase PostgreSQL asyncpg URL |
-| `DB_POOL_SIZE` | `5` | SQLAlchemy connection pool size |
-| `DB_MAX_OVERFLOW` | `10` | Max overflow connections in pool |
-| `DB_SSL_REQUIRE` | `true` | Enforce TLS/SSL for database connectivity |
-| `CLERK_SECRET_KEY` | *(None)* | Clerk backend secret key (Phase 2 integration) |
-| `CLERK_PUBLISHABLE_KEY` | *(None)* | Clerk public key (Phase 2 integration) |
+# Supabase IPv4 Transaction Pooler (Port 6543)
+DB_HOST=aws-0-ap-south-1.pooler.supabase.com
+DB_PORT=6543
+DB_USER=postgres.your_project_ref
+DB_PASSWORD=your_password
+DB_NAME=postgres
+DB_SSL_REQUIRE=true
+
+# Connection Pool Settings
+DB_POOL_SIZE=5
+DB_MAX_OVERFLOW=10
+DB_POOL_TIMEOUT=30
+DB_POOL_RECYCLE=1800
+DB_ECHO=false
+```
+
+> **Security Note:** `.env` is strictly ignored in `.gitignore`. Passwords containing special characters (`@`, `,`, `#`) are automatically URL-encoded by `app/core/config.py`.
+
+### Supabase Connection Modes & Limitations
+- **Transaction Pooler (Port 6543)**: Supabase's transaction pooler (Supavisor) supports IPv4 networks and high concurrency. Because multiple transactions share backend connections, prepared statements are disabled (`statement_cache_size: 0`).
+- **Direct Connection (Port 5432)**: Direct connection connects directly to the PostgreSQL instance. Requires IPv6 routing unless the Supabase IPv4 add-on is active.
 
 ---
 
-## 3. Configuring Supabase PostgreSQL
+## 3. Database Schema & Relational Design
 
-NEXAWIS connects to Supabase PostgreSQL using `asyncpg` via SQLAlchemy 2.x asynchronous engine.
+The NEXAWIS schema is divided into 7 distinct entity clusters:
 
-### Connecting to Supabase
-In Supabase dashboard (**Project Settings > Database**), copy your Connection URI:
+### 1. Workspaces & Tenant Isolation
+- **`workspaces`**: Tenant organization partition (`id`, `name`, `slug`, `created_at`, `updated_at`).
+- **`workspace_members`**: User-to-workspace mapping with roles (`owner`, `admin`, `member`, `viewer`).
+- **`workspace_settings`**: Workspace-level defaults (reporting periods, default department, custom AWIS weight profiles).
 
-- **Direct Connection (port 5432):**
-  ```env
-  DATABASE_URL=postgresql+asyncpg://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres
-  ```
+### 2. Users & Preferences
+- **`users`**: Application user profiles linked to Clerk via `clerk_user_id`. No passwords or auth tokens are stored here.
+- **`user_preferences`**: Personalized settings (theme, density, motion, time formats, notification toggles).
 
-- **Transaction Pooler (port 6543 / Supavisor):**
-  ```env
-  DATABASE_URL=postgresql+asyncpg://postgres.YOUR_PROJECT_REF:YOUR_PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres
-  ```
+### 3. Skills & Workforce Entities
+- **`skills`**: Normalized catalog of organizational competencies (`workspace_id`, `name`, `category`).
+- **`employee_skills`**: M:N relational mapping with `proficiency` (0-100), `is_primary`, and `years_experience`.
+- **`employees`**: Core workforce entity (`employee_code`, `full_name`, `department`, `designation`, `experience_years`, operational metrics, and sensitive `mental_fatigue_score`).
+- **`employee_certifications`**: Professional credentials and certifications.
+- **`employee_workload_history`**: Time-series logs of weekly hours, overtime, and utilization percentage.
+- **`employee_performance_history`**: Period-by-period evaluation scores and notes.
 
-### Supabase Pooler Compatibility
-When using transaction pooling (PgBouncer/Supavisor), prepared statements can cause collisions. The engine in `app/core/database.py` is configured with:
-```python
-connect_args={"statement_cache_size": 0, "ssl": "require"}
-```
-This ensures seamless operation whether connecting directly to PostgreSQL or through the Supabase connection pooler.
+### 4. Projects & Staffing Allocations
+- **`projects`**: Project profile (`project_code`, `name`, `department`, `priority`, `complexity`, dates, plus 11 project success factors).
+- **`project_requirements`**: Skill prerequisites demanded by the project with `min_proficiency` and `priority`.
+- **`project_milestones`**: Timeline milestones (`Completed`, `Current`, `Upcoming`).
+- **`project_allocations`**: Finalized staffing assignments (`role`, `allocation_percent`, `team_fit`).
 
-If `DATABASE_URL` is omitted, the application starts gracefully in decoupled local development mode, reporting `unconfigured` on database readiness checks without throwing unhandled crashes.
+### 5. Team Formation & Candidate Recommendations
+- **`team_formations`**: Team recommendation runs (`formation_code`, `formation_option`, `status`, quality scores).
+- **`team_formation_members`**: Candidate team members with `assigned_role`, `match_score`, `is_override`, and qualitative explainability reasons (`why_selected`).
+
+### 6. AWIS & ML Intelligence Results (Separated from Observed Data)
+- **`awis_evaluations`**: 9-dimension composite intelligence scores (`composite_awis_score`, `skill_intelligence`, `experience_intelligence`, `performance_intelligence`, `availability_intelligence`, `workload_intelligence`, `burnout_intelligence`, `collaboration_intelligence`, `growth_intelligence`, `compatibility_intelligence`).
+- **`ml_burnout_predictions`**: Inference records from `burnout_model.pkl` with `predicted_burn_rate`, `risk_tier`, input feature provenance, and SHAP attributions.
+- **`ml_project_success_predictions`**: Inference records from `Project_Success_XGBoost.pkl` with `predicted_success_score`, confidence, aggregated team features, and positive/negative factors.
+
+### 7. Reports & Scheduling
+- **`reports`**: Historical report configurations, executive metrics, chart data definitions, and insights (no file binary blobs stored in DB).
+- **`scheduled_reports`**: Recurring automated report schedules and recipient email lists.
 
 ---
 
-## 4. Running the Backend Locally
+## 4. Alembic Migrations
 
-Run the development server with hot-reload enabled:
+All schema changes are managed via Alembic and executed over asynchronous connections (`asyncpg`).
 
-```bash
-# Using Python inside .venv:
-uvicorn app.main:app --reload --port 8000 --host 127.0.0.1
-```
+### Common Migration Commands
 
-Or on Windows:
 ```powershell
-.\.venv\Scripts\uvicorn.exe app.main:app --reload --port 8000 --host 127.0.0.1
+cd backend
+
+# Inspect current database revision
+.\.venv\Scripts\alembic.exe current
+
+# View migration history
+.\.venv\Scripts\alembic.exe history
+
+# Generate a new migration after updating models
+.\.venv\Scripts\alembic.exe revision --autogenerate -m "describe_changes"
+
+# Apply pending migrations to the database
+.\.venv\Scripts\alembic.exe upgrade head
+
+# Roll back the most recent migration
+.\.venv\Scripts\alembic.exe downgrade -1
 ```
 
-The API will be accessible at:
-- **Root info:** `http://127.0.0.1:8000/`
-- **Interactive OpenAPI Docs:** `http://127.0.0.1:8000/docs`
-- **ReDoc Documentation:** `http://127.0.0.1:8000/redoc`
-- **Health check:** `http://127.0.0.1:8000/api/v1/health`
-- **Database readiness:** `http://127.0.0.1:8000/api/v1/health/db`
-- **Combined readiness:** `http://127.0.0.1:8000/api/v1/health/ready`
+---
 
-*(Note: In production environments, `/docs` and `/redoc` are automatically disabled for attack surface reduction.)*
+## 5. Clerk Authentication & Server-Side Authorization
+
+NEXAWIS enforces **zero-trust identity validation** powered by Clerk and FastAPI:
+
+1. **Cryptographic JWT Verification**:
+   - Bearer tokens are validated server-side against Clerk's JWKS key set (`/.well-known/jwks.json`) using `pyjwt[crypto]`.
+   - Direct RSA PEM public key verification (`CLERK_PEM_PUBLIC_KEY`) is also supported.
+   - Claims verified: Cryptographic signature (RS256), expiration (`exp`), not-before (`nbf`), issuer (`iss`), and authorized party (`azp`).
+2. **Persistent User Profiles & Concurrency Safety**:
+   - Authenticated identities are resolved to persistent `User` records in PostgreSQL via verified `clerk_user_id`.
+   - First-time sign-ins auto-provision user profiles, preferences, and an initial personal workspace with Owner privileges.
+   - Profile sync route (`POST /api/v1/auth/sync`) synchronizes name, avatar, title, and department.
+3. **Multi-Tenancy & Workspace Isolation**:
+   - Every protected request resolves active tenant membership using the `X-Workspace-Id` header.
+   - Cross-workspace queries are blocked with `403 Forbidden` (`WORKSPACE_ACCESS_DENIED`), preventing IDOR vulnerabilities.
+4. **Role-Based Access Control (RBAC)**:
+   - System Roles: `Admin`, `HR`, `Project Manager`, `Employee`, `Leadership` (derived from PRD §3).
+   - Fine-grained permission guards protect sensitive endpoints (e.g. `employees:wellbeing_view` for mental fatigue and burnout scores).
+   - Role claims in client tokens are strictly ignored; authority is derived exclusively from the server database.
+
+### Protected Authentication Endpoints
+
+| Method | Endpoint | Description | Guard / Protection |
+|---|---|---|---|
+| `GET` | `/api/v1/auth/me` | Current profile, active workspace, permissions | Bearer Token |
+| `POST` | `/api/v1/auth/sync` | Sync profile details from Clerk | Bearer Token |
+| `GET` | `/api/v1/auth/workspaces` | List user's active workspaces | Bearer Token |
+| `POST` | `/api/v1/auth/workspaces` | Create new workspace (Owner role) | Bearer Token |
+| `GET` | `/api/v1/auth/test/protected` | Test token verification | Bearer Token |
+| `GET` | `/api/v1/auth/test/admin-only` | Test administrator guard | `SystemRole.ADMIN` |
+| `GET` | `/api/v1/auth/test/workspace-owner` | Test workspace isolation | `WorkspaceRole.OWNER` |
 
 ---
 
-## 5. Health vs. Database Readiness Checks
+## 6. Database Security Architecture
 
-The foundation decouples process liveness from external database connectivity:
-
-### 1. Process Liveness (`GET /api/v1/health`)
-- **Purpose:** Fast runtime check confirming the FastAPI process and event loop are responsive.
-- **Performance:** Instant (< 5ms), does **not** query the database.
-- **Status Code:** `200 OK`
-- **Response Format:**
-  ```json
-  {
-    "status": "ok",
-    "service": "NEXAWIS API",
-    "version": "0.1.0",
-    "environment": "development",
-    "timestamp": "2026-10-19T13:20:53.156182+00:00",
-    "uptime_seconds": 120.83
-  }
-  ```
-
-### 2. Database Readiness (`GET /api/v1/health/db`)
-- **Purpose:** Actively verifies connection to Supabase PostgreSQL by executing `SELECT 1`. Measures round-trip query latency in milliseconds.
-- **Status Codes:**
-  - `200 OK`: Database connected (`status: "healthy"`) or unconfigured.
-  - `503 Service Unavailable`: Database unreachable, timeout, or credentials rejected (`status: "unreachable"`).
-- **Safety Guarantee:** Passwords and internal connection details are redacted with `***` in the response (`database_target`).
-- **Response Format:**
-  ```json
-  {
-    "status": "healthy",
-    "connected": true,
-    "message": "Database connection verified successfully.",
-    "latency_ms": 14.5,
-    "dialect": "postgresql+asyncpg",
-    "database_target": "postgresql+asyncpg://postgres:***@db.YOUR_REF.supabase.co:5432/postgres"
-  }
-  ```
-
-### 3. Combined Readiness Probe (`GET /api/v1/health/ready`)
-- **Purpose:** Used by container orchestrators, Kubernetes, or load balancers to determine traffic routing.
-- **Status Codes:**
-  - `200 OK`: Process is running and database is verified (`status: "ready"`).
-  - `503 Service Unavailable`: Database is configured but unreachable (`status: "not_ready"`).
+1. **Server-Side Authorization via FastAPI**:
+   - Application database traffic connects through FastAPI using parameterized SQLAlchemy queries.
+   - All tenant queries are scoped by `workspace_id`.
+2. **Row Level Security (RLS) Advisory**:
+   - Supabase tables are exposed to the PostgREST API when direct client access is enabled.
+   - Because NEXAWIS routes all business operations through the FastAPI backend using service connections, direct browser-to-Supabase PostgREST access is not used.
+   - If direct frontend-to-Supabase client access is introduced in a future phase, RLS must be enabled with appropriate workspace-scoped policies.
+3. **Sensitive Workforce Information Protection**:
+   - `mental_fatigue_score`, `wellbeing_risk`, and `burnout_predictions` are treated as sensitive workforce information.
+   - Access to these fields is restricted by role (Admin and HR only; hidden from employees and peer managers).
+4. **Credential Redaction**:
+   - `SensitiveDataFilter` scrubs passwords, JWTs, and full connection strings from server logs (`***REDACTED***`).
 
 ---
 
-## 6. Security Controls Implemented
+## 7. Canonical ML Model Directory
 
-| Security Control | Implementation |
-|---|---|
-| **Secret Masking** | Pydantic `SecretStr` protects `DATABASE_URL` and `CLERK_SECRET_KEY` from stringification, prints, and log leaks. |
-| **Log Redaction** | `SensitiveDataFilter` scrubs passwords, bearer tokens, API keys, and connection strings from all application logs before write. |
-| **CORS Restriction** | `CORSMiddleware` restricts access to explicitly allowed frontend origins. Wildcard `*` is prohibited when credentials are enabled. |
-| **Security Headers** | `SecurityHeadersMiddleware` injects `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, and `Referrer-Policy: strict-origin-when-cross-origin`. Enforces HSTS in production. |
-| **DoS Payload Limiting** | `RequestSizeLimitMiddleware` inspects `Content-Length` and rejects oversized payloads (> 2 MB) with `413 Payload Too Large`. |
-| **Rate Limiting** | `InMemoryRateLimitMiddleware` enforces a sliding-window limit per IP with a standard `429 Too Many Requests` envelope and `Retry-After` header. |
-| **Safe Error Envelopes** | Centralized exception handlers catch all 400, 404, 422, and 500 errors. Stack traces and raw ORM exception strings are logged server-side only; clients receive a standardized, safe error envelope. |
-| **Parameterized Queries** | SQLAlchemy 2.x parameterized statements prevent SQL injection. |
-| **Database Pool Safety** | Asynchronous connection pooling with `pool_pre_ping=True`, timeout safeguards, statement cache size 0 for pooler compatibility, and graceful engine disposal on shutdown. |
+The pre-trained machine learning model artifacts are located at the project root:
 
----
-
-## 7. Running Automated Tests
-
-Run the complete test suite:
-
-```bash
-# From the backend directory:
-pytest -v
+```
+Nexawis/
+└── ml_model/
+    ├── Project_Success_XGBoost.pkl  # XGBoost project success prediction model
+    └── burnout_model.pkl            # Burnout prediction regression model
 ```
 
-Run tests with code coverage analysis:
-```bash
-pytest -v --cov=app --cov-report=term-missing
-```
-
-### Test Suite Summary
-- **Total Tests:** 32 automated tests across 5 test suites.
-- **Coverage:** 89% total code coverage.
-- **Test Categories:**
-  - `test_config.py`: Settings validation, origin parsing, async URL conversion, credential masking.
-  - `test_health.py`: Process liveness, database health (connected, unconfigured, unreachable), combined readiness.
-  - `test_database.py`: Async engine lifecycle, connection pool disposal, session rollback on error.
-  - `test_security.py`: CORS origin validation, security headers, request size limits, rate limiting.
-  - `test_exceptions.py`: 404 envelope, 422 validation details, 500 stack trace suppression, log redaction.
+> **Important Rule:** Do not modify, rename, retrain, or delete these artifacts. In the later ML serving phase, they will be loaded in-memory behind dedicated validation pipelines.
 
 ---
 
-## 8. Remaining Limitations & Phase 2 Roadmap
+## 8. Automated Testing & Verification
 
-In accordance with Phase 1 scope:
-- **Authentication**: Clerk configuration parameters are prepared in `Settings`. Full server-side JWT verification, claims extraction, and role authorization will be implemented in Phase 2.
-- **Database Schema**: No business tables (Employees, Projects, Skills, Team Formation) or business endpoints are created in Phase 1. Alembic is configured and ready to execute migrations once schemas are defined in subsequent phases.
-- **Live Supabase Verification**: In environments where real Supabase credentials have not yet been provided in `.env`, the database readiness check cleanly reports `status: "unconfigured"` and remains unverified against live cloud infrastructure until valid credentials are supplied.
+Run the automated test suite:
+
+```powershell
+cd backend
+.\.venv\Scripts\pytest.exe -v --cov=app --cov-report=term-missing
+```
+
+### Test Coverage Highlights
+- **64 tests passing**
+- **84% total code coverage**
+- Coverage includes:
+  - Cryptographic token verification, expired tokens, untrusted keys, anti-spoofing (`test_auth.py`)
+  - Multi-tenancy isolation and cross-workspace access rejection (`test_auth.py`)
+  - Model structure, column defaults, and table metadata (`test_models.py`)
+  - Full relational insertions, unique constraints, and cascade deletions (`test_database_models_async.py`)
+  - Settings, password URL encoding, and credential masking (`test_config.py`)
+  - Database readiness probes and connection lifecycle (`test_database.py`, `test_health.py`)
+  - Security headers, CORS origin filtering, size limits, and rate limiting (`test_security.py`)
+

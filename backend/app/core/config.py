@@ -5,7 +5,7 @@ Reads from environment variables and .env file using Pydantic Settings.
 
 from typing import List, Literal, Optional, Union
 import re
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse, quote_plus
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -72,11 +72,23 @@ class Settings(BaseSettings):
     DB_POOL_RECYCLE: int = Field(default=1800, ge=60)
     DB_ECHO: bool = False
 
-    # Authentication preparation (Clerk) - for future phase integration
+    # Authentication configuration (Clerk)
     CLERK_SECRET_KEY: Optional[SecretStr] = None
     CLERK_PUBLISHABLE_KEY: Optional[str] = None
     CLERK_ISSUER: Optional[str] = None
     CLERK_JWKS_URL: Optional[str] = None
+    CLERK_PEM_PUBLIC_KEY: Optional[str] = None
+    CLERK_AUDIENCE: Optional[str] = None
+    CLERK_AUTHORIZED_PARTIES: Union[List[str], str] = []
+    CLERK_JWT_ALGORITHMS: List[str] = ["RS256"]
+
+    def get_clerk_jwks_url(self) -> Optional[str]:
+        """Resolves the canonical JWKS URL from CLERK_JWKS_URL or CLERK_ISSUER."""
+        if self.CLERK_JWKS_URL:
+            return self.CLERK_JWKS_URL.strip()
+        if self.CLERK_ISSUER:
+            return f"{self.CLERK_ISSUER.strip().rstrip('/')}/.well-known/jwks.json"
+        return None
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
@@ -120,7 +132,7 @@ class Settings(BaseSettings):
         if self.DATABASE_URL:
             raw_url = self.DATABASE_URL.get_secret_value().strip()
         elif self.DB_HOST and self.DB_USER and self.DB_PASSWORD and self.DB_NAME:
-            pwd = self.DB_PASSWORD.get_secret_value()
+            pwd = quote_plus(self.DB_PASSWORD.get_secret_value())
             raw_url = f"postgresql+asyncpg://{self.DB_USER}:{pwd}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
         if not raw_url:

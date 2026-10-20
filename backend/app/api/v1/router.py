@@ -4,13 +4,21 @@ Aggregates and organizes all v1 sub-routers.
 """
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import health
+from app.api.v1.endpoints import health, auth
 
 api_v1_router = APIRouter()
 
-# Mount health & readiness endpoints
+# Mount health & readiness endpoints (public)
 api_v1_router.include_router(
     health.router,
     prefix="",
     tags=["System & Health"],
 )
+
+# Mount authentication & authorization endpoints (protected)
+api_v1_router.include_router(
+    auth.router,
+    prefix="/auth",
+    tags=["Authentication & Profiles"],
+)
+
