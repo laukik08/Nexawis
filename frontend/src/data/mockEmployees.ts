@@ -1,58 +1,16 @@
 // SECURE MOCK DATA LAYER: EMPLOYEES
-// Used solely for frontend structural simulation until API integration is complete.
-// Does NOT contain real employee data.
+// Used solely as reference/mock fixtures during unit tests.
+// Does NOT represent real employee records.
 
-export interface Skill {
-  name: string;
-  proficiency: number; // 0-100
-  isPrimary: boolean;
-}
+export type {
+  Skill,
+  ProjectAllocation,
+  PerformanceRecord,
+  AwisInsights,
+  Employee,
+} from '../types/employee';
 
-export interface ProjectAllocation {
-  id: string;
-  name: string;
-  role: string;
-  allocationPercent: number;
-  priority: 'High' | 'Medium' | 'Low';
-  teamFit: number;
-  status: string;
-}
-
-export interface PerformanceRecord {
-  month: string;
-  score: number;
-}
-
-export interface Employee {
-  id: string;
-  employeeId: string;
-  name: string;
-  avatarUrl: string;
-  role: string;
-  department: string;
-  experienceYears: number;
-  status: 'Available' | 'Allocated' | 'On Leave' | 'Overloaded';
-  
-  // Intelligence Metrics
-  performanceScore: number;
-  performanceTrend: 'up' | 'down' | 'stable';
-  availabilityScore: number; // 0-100, 100 means fully available
-  workloadScore: number; // 0-100, higher means more loaded
-  wellbeingRisk: 'Low' | 'Moderate' | 'High';
-  growthPotential: number; // 0-100
-  awisFitScore: number;
-  
-  skills: Skill[];
-  currentProjects: ProjectAllocation[];
-  performanceHistory: PerformanceRecord[];
-  
-  // Explainability insight
-  awisInsights: {
-    positive: string[];
-    negative: string[];
-    summary: string;
-  };
-}
+import type { Employee } from '../types/employee';
 
 export const mockEmployees: Employee[] = [
   {

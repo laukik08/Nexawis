@@ -66,6 +66,17 @@ class ResourceNotFoundError(AppException):
         )
 
 
+class ConflictError(AppException):
+    """Raised when an operation conflicts with existing resource uniqueness or constraints."""
+
+    def __init__(self, message: str = "A conflict occurred with existing resource state."):
+        super().__init__(
+            message=message,
+            code="CONFLICT",
+            status_code=status.HTTP_409_CONFLICT,
+        )
+
+
 class PayloadTooLargeError(AppException):
     """Raised when incoming request body exceeds allowed size limit."""
 
