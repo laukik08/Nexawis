@@ -65,12 +65,22 @@ class InMemoryRateLimitMiddleware(BaseHTTPMiddleware):
     Protects public health, readiness, and future auth endpoints.
     """
 
+    _instances: List["InMemoryRateLimitMiddleware"] = []
+
     def __init__(self, app, requests_per_minute: int = 120):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         # Dict of IP -> list of timestamps
         self.client_records: Dict[str, List[float]] = defaultdict(list)
         self.window_seconds = 60.0
+        InMemoryRateLimitMiddleware._instances.append(self)
+
+    @classmethod
+    def reset_all(cls) -> None:
+        """Resets all tracked rate limit records, used for testing isolation."""
+        for inst in cls._instances:
+            inst.client_records.clear()
+
 
     def _get_client_ip(self, request: Request) -> str:
         # Default to direct connection host to prevent spoofed X-Forwarded-For

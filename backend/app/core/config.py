@@ -3,6 +3,7 @@ NEXAWIS Backend - Core Application Configuration.
 Reads from environment variables and .env file using Pydantic Settings.
 """
 
+from pathlib import Path
 from typing import List, Literal, Optional, Union
 import re
 from urllib.parse import urlparse, urlunparse, quote_plus
@@ -52,6 +53,22 @@ class Settings(BaseSettings):
         description="Default sliding-window rate limit per client IP on public endpoints.",
     )
 
+    # Machine Learning Canonical Artifact Settings (PRD §6, §9)
+    ML_MODEL_DIR: str = Field(
+        default_factory=lambda: str(
+            (Path(__file__).resolve().parents[3] / "ml_model")
+            if (Path(__file__).resolve().parents[3] / "ml_model").exists()
+            else Path("e:/Nexawis/ml_model")
+        ),
+        description="Canonical directory containing pre-trained model artifacts.",
+    )
+    BURNOUT_MODEL_FILENAME: str = "burnout_model.pkl"
+    PROJECT_SUCCESS_MODEL_FILENAME: str = "Project_Success_XGBoost.pkl"
+    BURNOUT_MODEL_EXPECTED_SHA256: str = "ce5b9f45570e77152f29c9513f2b3912a885b757c045b63a8a6b2e6569a3ec18"
+    PROJECT_SUCCESS_EXPECTED_SHA256: str = "a7c04b7ff90a1e59507dc4ada1c2e86fc939348ad3d1879af95219bd7bf565cf"
+    BURNOUT_MODEL_VERSION: str = "burnout_model_v1"
+    PROJECT_SUCCESS_MODEL_VERSION: str = "Project_Success_XGBoost_v1"
+
     # Supabase PostgreSQL connectivity
     DATABASE_URL: Optional[SecretStr] = Field(
         default=None,
@@ -79,8 +96,23 @@ class Settings(BaseSettings):
     CLERK_JWKS_URL: Optional[str] = None
     CLERK_PEM_PUBLIC_KEY: Optional[str] = None
     CLERK_AUDIENCE: Optional[str] = None
-    CLERK_AUTHORIZED_PARTIES: Union[List[str], str] = []
     CLERK_JWT_ALGORITHMS: List[str] = ["RS256"]
+
+    # Notification & Scheduled Report Delivery (Phase 11)
+    EMAIL_PROVIDER: Literal["simulated", "smtp"] = "simulated"
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = Field(default=587, ge=1, le=65535)
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[SecretStr] = None
+    SMTP_TLS: bool = True
+    EMAIL_FROM: str = "notifications@nexawis.internal"
+    EMAIL_TIMEOUT_SECONDS: int = Field(default=15, ge=1, le=120)
+
+    # Scheduler Engine Configuration (Phase 11)
+    SCHEDULER_ENABLED: bool = True
+    SCHEDULER_INTERVAL_SECONDS: int = Field(default=60, ge=5, le=3600)
+    ALERT_SCAN_INTERVAL_SECONDS: int = Field(default=300, ge=30, le=86400)
+    SCHEDULER_MAX_RETRIES: int = Field(default=3, ge=1, le=10)
 
     def get_clerk_jwks_url(self) -> Optional[str]:
         """Resolves the canonical JWKS URL from CLERK_JWKS_URL or CLERK_ISSUER."""

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, UserPlus, Trash2, AlertCircle, CheckCircle2, Info, Loader2 } from 'lucide-react';
+import { X, UserPlus, Trash2, AlertCircle, CheckCircle2, CheckCircle, Loader2 } from 'lucide-react';
 import { useProjects } from '../../context/ProjectsContext';
+import { employeeService } from '../../services/employeeService';
 import { mockEmployees } from '../../data/mockEmployees';
+import type { Employee } from '../../types/employee';
 import type { Project, ProjectTeamMember } from '../../data/mockProjects';
 
 interface ManageTeamModalProps {
@@ -13,6 +15,7 @@ interface ManageTeamModalProps {
 export function ManageTeamModal({ isOpen, project, onClose }: ManageTeamModalProps) {
   const { addTeamMember, removeTeamMember } = useProjects();
 
+  const [employeesList, setEmployeesList] = useState<Employee[]>(mockEmployees);
   const [selectedEmpId, setSelectedEmpId] = useState('');
   const [memberRole, setMemberRole] = useState('');
   const [allocationPercent, setAllocationPercent] = useState(100);
@@ -20,22 +23,42 @@ export function ManageTeamModal({ isOpen, project, onClose }: ManageTeamModalPro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Fetch live workspace employees when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      let isMounted = true;
+      employeeService
+        .getEmployees({ pageSize: 100 })
+        .then(res => {
+          if (isMounted && res.items && res.items.length > 0) {
+            setEmployeesList(res.items);
+          }
+        })
+        .catch(err => {
+          console.warn('[ManageTeamModal] Using default employee list:', err);
+        });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [isOpen]);
+
   // Available employees who are not already on the team
-  const availableEmployees = mockEmployees.filter(
-    emp => !project.currentTeam.some(m => m.id === emp.id || m.name.toLowerCase() === emp.name.toLowerCase())
+  const availableEmployees = employeesList.filter(
+    emp => !project.currentTeam.some(m => m.id === emp.id || m.id === emp.employeeId || m.name.toLowerCase() === emp.name.toLowerCase())
   );
 
   // Auto-fill role when employee selected
   useEffect(() => {
     if (selectedEmpId) {
-      const emp = mockEmployees.find(e => e.id === selectedEmpId);
+      const emp = employeesList.find(e => e.id === selectedEmpId || e.employeeId === selectedEmpId);
       if (emp) {
         setMemberRole(emp.role);
       }
     } else {
       setMemberRole('');
     }
-  }, [selectedEmpId]);
+  }, [selectedEmpId, employeesList]);
 
   // Clear feedback when modal opens
   useEffect(() => {
@@ -67,14 +90,14 @@ export function ManageTeamModal({ isOpen, project, onClose }: ManageTeamModalPro
       return;
     }
 
-    const emp = mockEmployees.find(e => e.id === selectedEmpId);
+    const emp = employeesList.find(e => e.id === selectedEmpId || e.employeeId === selectedEmpId);
     if (!emp) {
       setFeedback({ type: 'error', message: 'Employee not found in workforce directory.' });
       return;
     }
 
     // Check duplicate
-    if (project.currentTeam.some(m => m.id === emp.id)) {
+    if (project.currentTeam.some(m => m.id === emp.id || m.id === emp.employeeId)) {
       setFeedback({ type: 'error', message: `${emp.name} is already assigned to this project.` });
       return;
     }
@@ -161,10 +184,10 @@ export function ManageTeamModal({ isOpen, project, onClose }: ManageTeamModalPro
         </div>
 
         {/* Backend Note Banner */}
-        <div className="px-6 py-2.5 bg-[--color-accent-cyan]/10 border-b border-[--color-accent-cyan]/20 flex items-center gap-2.5 text-xs text-[--color-text-primary]">
-          <Info className="w-4 h-4 text-[--color-accent-cyan] shrink-0" />
+        <div className="px-6 py-2.5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-2.5 text-xs text-[--color-text-primary]">
+          <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
           <span>
-            <strong>Workforce Simulation Mode:</strong> Assignments are updated in your active workspace session. (Remote backend endpoint <code className="text-[11px] font-mono bg-[--color-accent-cyan]/15 px-1 py-0.5 rounded">POST /api/projects/:id/members</code> is pending integration).
+            <strong>Active Workspace Allocation:</strong> Assignments are validated and persisted directly to your workspace database (<code className="text-[11px] font-mono bg-emerald-500/15 px-1 py-0.5 rounded">POST /api/v1/projects/:id/team</code>).
           </span>
         </div>
 

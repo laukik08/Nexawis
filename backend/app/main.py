@@ -18,6 +18,7 @@ from app.core.middleware import (
     InMemoryRateLimitMiddleware,
 )
 from app.api.v1.router import api_v1_router
+from app.services.ml.loader import model_manager
 
 
 @asynccontextmanager
@@ -39,6 +40,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         get_engine()
     else:
         logger.info("No DATABASE_URL provided. Operating in decoupled local development mode.")
+
+    # Initialize pre-trained machine learning model artifacts (Phase 7)
+    model_manager.load_models()
 
     yield
 
@@ -80,7 +84,7 @@ def create_application() -> FastAPI:
         allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+        allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With", "X-Workspace-Id"],
         expose_headers=["Retry-After"],
         max_age=600,
     )

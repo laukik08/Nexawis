@@ -170,13 +170,20 @@ export function ReportsPage() {
     }
   };
 
-  const handleDownloadReport = (report: ReportRecord) => {
+  const handleDownloadReport = async (report: ReportRecord) => {
     try {
-      exportReportToCsv(report);
-      showToast(`Downloaded CSV for "${report.name}"`);
+      const format = (report.format?.toLowerCase() === 'pdf' ? 'pdf' : 'csv') as 'pdf' | 'csv';
+      try {
+        await reportService.downloadReportFile(report.id, format, report.name);
+        showToast(`Downloaded ${format.toUpperCase()} for "${report.name}"`);
+      } catch (backendErr) {
+        // Fallback to client-side CSV export
+        exportReportToCsv(report);
+        showToast(`Exported CSV for "${report.name}"`);
+      }
     } catch (err) {
-      console.error('Error downloading CSV:', err);
-      showToast('Failed to export CSV', 'error');
+      console.error('Error downloading report:', err);
+      showToast('Failed to export report file', 'error');
     }
   };
 

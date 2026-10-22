@@ -32,6 +32,10 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 
 @pytest_asyncio.fixture(autouse=True)
 async def cleanup_database():
-    """Ensure database engine is safely reset between tests."""
+    """Ensure database engine and rate limit records are safely reset between tests."""
+    from app.core.middleware import InMemoryRateLimitMiddleware
+    InMemoryRateLimitMiddleware.reset_all()
     yield
     await close_db_engine()
+    InMemoryRateLimitMiddleware.reset_all()
+

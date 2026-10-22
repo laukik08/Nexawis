@@ -99,6 +99,7 @@ export interface HistoryTeamMember {
 
 export interface FormationHistoryItem {
   id: string; // e.g. 'FRM-2026-001'
+  formationId?: string; // Backend UUID
   projectId: string;
   projectName: string;
   projectDepartment: string;
@@ -115,6 +116,26 @@ export interface FormationHistoryItem {
     availabilityCoverage: number;
   };
   notes?: string;
+}
+
+export interface TeamAlternativeItem {
+  alternativeId: string;
+  strategyLabel: string;
+  description: string;
+  members: TeamCandidate[];
+  metrics: TeamSummaryMetrics;
+  tradeOffs: string[];
+}
+
+export interface TeamRecommendationResult {
+  candidates: TeamCandidate[];
+  metrics: TeamSummaryMetrics;
+  formationId?: string;
+  formationCode?: string;
+  isFeasible?: boolean;
+  feasibilityExplanation?: string;
+  unmetRequirements?: string[];
+  alternatives?: TeamAlternativeItem[];
 }
 
 export interface FormationKpiData {

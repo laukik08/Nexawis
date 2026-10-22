@@ -19,7 +19,8 @@ import {
   BarChart3, 
   Cpu, 
   Sparkles,
-  Info 
+  Info,
+  BrainCircuit
 } from 'lucide-react';
 import type { FullAnalyticsPayload } from '../../types/analytics';
 import { useTheme } from '../../context/ThemeContext';
@@ -79,55 +80,65 @@ export function OverviewTab({ data }: OverviewTabProps) {
           </div>
 
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.awisTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="awisGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0284c7" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#0284c7" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <XAxis 
-                  dataKey="label" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: chartTheme.textColor, fontSize: 11 }} 
-                  dy={8}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: chartTheme.textColor, fontSize: 11 }}
-                  domain={[70, 100]}
-                />
-                <ReferenceLine y={85} stroke="#16a34a" strokeDasharray="3 3" label={{ value: 'Target: 85', fill: '#16a34a', fontSize: 10, position: 'insideTopRight' }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: chartTheme.tooltipBg, 
-                    borderColor: chartTheme.tooltipBorder,
-                    borderRadius: '12px',
-                    color: 'var(--color-text-primary)',
-                    boxShadow: 'var(--shadow-premium-soft)'
-                  }}
-                  itemStyle={{ color: 'var(--color-accent-cyan)', fontWeight: 'bold' }}
-                  formatter={(val: any) => [`${val}/100`, 'AWIS Score']}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#0284c7" 
-                  strokeWidth={2.5} 
-                  fillOpacity={1} 
-                  fill="url(#awisGradient)" 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {data.awisTrend.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data.awisTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="awisGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0284c7" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#0284c7" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="label" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: chartTheme.textColor, fontSize: 11 }} 
+                    dy={8}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: chartTheme.textColor, fontSize: 11 }}
+                    domain={[70, 100]}
+                  />
+                  <ReferenceLine y={85} stroke="#16a34a" strokeDasharray="3 3" label={{ value: 'Target: 85', fill: '#16a34a', fontSize: 10, position: 'insideTopRight' }} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: chartTheme.tooltipBg, 
+                      borderColor: chartTheme.tooltipBorder,
+                      borderRadius: '12px',
+                      color: 'var(--color-text-primary)',
+                      boxShadow: 'var(--shadow-premium-soft)'
+                    }}
+                    itemStyle={{ color: 'var(--color-accent-cyan)', fontWeight: 'bold' }}
+                    formatter={(val: any) => [`${val}/100`, 'AWIS Score']}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#0284c7" 
+                    strokeWidth={2.5} 
+                    fillOpacity={1} 
+                    fill="url(#awisGradient)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed rounded-xl border-[--color-border-subtle]">
+                <BrainCircuit className="w-8 h-8 text-[--color-text-muted] mb-2 opacity-50" />
+                <span className="text-sm font-semibold text-[--color-text-primary]">Insufficient Historical Trend Data</span>
+                <span className="text-xs text-[--color-text-muted] mt-1 max-w-xs">
+                  No candidate AWIS evaluations recorded in the active filter timeframe.
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="pt-3 border-t border-[--color-border-subtle] flex items-center justify-between text-xs text-[--color-text-muted]">
             <span>Active Range: {data.awisTrend.length} data periods</span>
             <span className="font-semibold text-[--color-accent-cyan]">
-              Latest Index: {data.awisTrend[data.awisTrend.length - 1]?.value || 88.9}
+              Latest Index: {data.awisTrend.length > 0 ? (data.awisTrend[data.awisTrend.length - 1]?.value ?? 'N/A') : 'N/A'}
             </span>
           </div>
         </div>
@@ -152,7 +163,7 @@ export function OverviewTab({ data }: OverviewTabProps) {
                 </h3>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[--color-surface-2] text-amber-400">
-                Demo Metric
+                Cohort Metric
               </span>
             </div>
             <p className="text-xs text-[--color-text-secondary] mb-4">
@@ -161,45 +172,55 @@ export function OverviewTab({ data }: OverviewTabProps) {
           </div>
 
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.projectPerformanceTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis 
-                  dataKey="label" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: chartTheme.textColor, fontSize: 11 }}
-                  dy={8}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: chartTheme.textColor, fontSize: 11 }}
-                  domain={[70, 100]}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: chartTheme.tooltipBg, 
-                    borderColor: chartTheme.tooltipBorder,
-                    borderRadius: '12px',
-                    color: 'var(--color-text-primary)',
-                    boxShadow: 'var(--shadow-premium-soft)'
-                  }}
-                  itemStyle={{ color: 'var(--color-accent-lime)', fontWeight: 'bold' }}
-                  formatter={(val: any) => [`${val}%`, 'Demo Success Index']}
-                />
-                <Bar 
-                  dataKey="value" 
-                  fill="#16a34a" 
-                  radius={[6, 6, 0, 0]} 
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            {data.projectPerformanceTrend.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.projectPerformanceTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <XAxis 
+                    dataKey="label" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: chartTheme.textColor, fontSize: 11 }}
+                    dy={8}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: chartTheme.textColor, fontSize: 11 }}
+                    domain={[70, 100]}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: chartTheme.tooltipBg, 
+                      borderColor: chartTheme.tooltipBorder,
+                      borderRadius: '12px',
+                      color: 'var(--color-text-primary)',
+                      boxShadow: 'var(--shadow-premium-soft)'
+                    }}
+                    itemStyle={{ color: 'var(--color-accent-lime)', fontWeight: 'bold' }}
+                    formatter={(val: any) => [`${val}%`, 'Cohort Success Index']}
+                  />
+                  <Bar 
+                    dataKey="value" 
+                    fill="#16a34a" 
+                    radius={[6, 6, 0, 0]} 
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 border border-dashed rounded-xl border-[--color-border-subtle]">
+                <BarChart3 className="w-8 h-8 text-[--color-text-muted] mb-2 opacity-50" />
+                <span className="text-sm font-semibold text-[--color-text-primary]">Insufficient Portfolio Trend Data</span>
+                <span className="text-xs text-[--color-text-muted] mt-1 max-w-xs">
+                  No project execution cohorts created in the active filter timeframe.
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="pt-3 border-t border-[--color-border-subtle] flex items-center justify-between text-xs text-[--color-text-muted]">
             <span>Portfolio Success Benchmark: &gt;88%</span>
             <span className="font-semibold text-[--color-accent-lime]">
-              Current Avg: {data.projectPerformanceTrend[data.projectPerformanceTrend.length - 1]?.value || 94.1}%
+              Current Avg: {data.projectPerformanceTrend.length > 0 ? `${data.projectPerformanceTrend[data.projectPerformanceTrend.length - 1]?.value}%` : 'N/A'}
             </span>
           </div>
         </div>

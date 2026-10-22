@@ -31,7 +31,9 @@ export function StepRecommendations() {
     setCandidateToReplace,
     setPreviewEmployee,
     removeCandidate,
-    generateRecommendations
+    generateRecommendations,
+    alternatives,
+    applyAlternative
   } = useTeamFormation();
 
   const [expandedRationaleId, setExpandedRationaleId] = useState<string | null>(null);
@@ -603,6 +605,83 @@ export function StepRecommendations() {
         </div>
 
       </div>
+
+      {/* Distinct Feasible Alternatives Section */}
+      {alternatives && alternatives.length > 0 && (
+        <div className="card-base p-6 rounded-2xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[--color-border-subtle]">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[--color-accent-cyan]" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[--color-text-primary]">
+                Alternative Strategic Compositions ({alternatives.length})
+              </h4>
+            </div>
+            <span className="text-[10px] font-mono text-[--color-text-muted]">
+              Explore trade-offs between fatigue-safety, velocity, and growth
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {alternatives.map((alt) => (
+              <div
+                key={alt.alternativeId}
+                className="p-4 rounded-xl bg-[--color-surface-2] border border-[--color-border-subtle] flex flex-col justify-between space-y-3 hover:border-[--color-accent-cyan] transition-all"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-[--color-text-primary]">
+                      {alt.strategyLabel}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[--color-accent-cyan]/10 text-[--color-accent-cyan] border border-[--color-accent-cyan]/25">
+                      {alt.metrics.overallTeamFit}% Fit
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[--color-text-secondary] leading-relaxed line-clamp-2">
+                    {alt.description}
+                  </p>
+
+                  <div className="pt-2 space-y-1">
+                    <div className="text-[9px] uppercase font-bold text-[--color-text-muted]">
+                      Key Trade-offs
+                    </div>
+                    {alt.tradeOffs.slice(0, 2).map((to, i) => (
+                      <div key={i} className="text-[10px] text-[--color-text-secondary] flex items-start gap-1">
+                        <span className="text-[--color-accent-cyan]">•</span>
+                        <span>{to}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 pt-2">
+                    {alt.members.slice(0, 4).map((m) => (
+                      <img
+                        key={m.id}
+                        src={m.avatarUrl}
+                        alt={m.name}
+                        title={`${m.name} (${m.assignedRole})`}
+                        className="w-7 h-7 rounded-full object-cover border border-[--color-border-strong]"
+                      />
+                    ))}
+                    {alt.members.length > 4 && (
+                      <span className="text-[10px] text-[--color-text-muted] font-bold">
+                        +{alt.members.length - 4}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => applyAlternative(alt.alternativeId)}
+                  className="w-full mt-2 py-1.5 px-3 rounded-lg text-xs font-bold bg-[--color-surface-3] hover:bg-[--color-accent-cyan] hover:text-black transition-colors border border-[--color-border-subtle]"
+                >
+                  Apply This Strategy
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Navigation Footer */}
       <div className="card-base p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">

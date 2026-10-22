@@ -5,7 +5,9 @@ workspace tenancy isolation, and role-based access control guards.
 """
 
 import uuid
+import asyncio
 from typing import Optional, List, Union
+
 from dataclasses import dataclass
 from fastapi import Depends, Header, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -164,6 +166,8 @@ async def get_or_create_user_profile(
         if retry_user:
             return retry_user
         raise
+
+
 
 
 async def get_current_user(

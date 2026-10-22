@@ -1,7 +1,10 @@
-import { mockEmployees } from '../data/mockEmployees';
-import { mockProjects } from '../data/mockProjects';
-import { initialFormationHistory } from '../data/mockTeamFormations';
-import { mockAwisTrends, mockProjectPerformanceTrends } from '../data/mockAnalytics';
+/**
+ * NEXAWIS Frontend - Analytics and Business Intelligence Service.
+ * Connects the Analytics dashboard directly to workspace-scoped FastAPI endpoints,
+ * removing reliance on hardcoded mock data in production while preserving opt-in demo mode.
+ */
+
+import { authenticatedFetch } from './apiClient';
 import type { 
   AnalyticsFilters, 
   FullAnalyticsPayload,
@@ -19,104 +22,153 @@ import {
   generateDemoInsights,
   exportToCsv
 } from '../utils/analyticsCalculations';
+import { mockEmployees } from '../data/mockEmployees';
+import { mockProjects } from '../data/mockProjects';
+import { initialFormationHistory } from '../data/mockTeamFormations';
+import { mockAwisTrends, mockProjectPerformanceTrends } from '../data/mockAnalytics';
+
+let demoModeOverride: boolean | null = null;
+
+export function setDemoModeOverride(enabled: boolean | null): void {
+  demoModeOverride = enabled;
+}
+
+export function isDemoModeActive(): boolean {
+  if (demoModeOverride !== null) {
+    return demoModeOverride;
+  }
+  const isEnvDemo = typeof import.meta !== 'undefined' && import.meta.env?.VITE_ENABLE_DEMO_MODE === 'true';
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    if (localStorage.getItem('nexawis_demo_mode') === 'true') {
+      return true;
+    }
+  }
+  return isEnvDemo;
+}
 
 export const analyticsService = {
   /**
-   * Retrieve unique departments and projects for filter dropdowns
+   * Retrieve unique departments and projects for filter dropdowns from the backend API.
    */
   async getFilterOptions(): Promise<{
     departments: string[];
     projects: Array<{ id: string; name: string }>;
   }> {
-    await new Promise(r => setTimeout(r, 60));
-
-    const depts = new Set<string>();
-    mockEmployees.forEach(e => depts.add(e.department));
-    mockProjects.forEach(p => depts.add(p.department));
-
-    const projectsList = mockProjects.map(p => ({
-      id: p.id,
-      name: p.name
-    }));
-
-    return {
-      departments: ['All', ...Array.from(depts)],
-      projects: [{ id: 'All', name: 'All Projects' }, ...projectsList]
-    };
+    try {
+      const res = await authenticatedFetch<{
+        departments: string[];
+        projects: Array<{ id: string; name: string }>;
+      }>('/analytics/filter-options');
+      return res;
+    } catch (err) {
+      if (isDemoModeActive()) {
+        console.warn('Backend filter options failed; using demo options because demo mode is active:', err);
+        const depts = new Set<string>();
+        mockEmployees.forEach(e => depts.add(e.department));
+        mockProjects.forEach(p => depts.add(p.department));
+        const projectsList = mockProjects.map(p => ({ id: p.id, name: p.name }));
+        return {
+          departments: ['All', ...Array.from(depts)],
+          projects: [{ id: 'All', name: 'All Projects' }, ...projectsList],
+        };
+      }
+      throw err;
+    }
   },
 
   /**
-   * Retrieve full analytics data package for given filters
+   * Retrieve full analytics data package for given filters from real backend endpoints.
    */
   async getAnalyticsData(filters: AnalyticsFilters): Promise<FullAnalyticsPayload> {
-    // Simulated network/processing latency
-    await new Promise(r => setTimeout(r, 160));
+    const params = new URLSearchParams();
+    params.set('preset', filters.dateRange.preset);
 
-    // 1. Filter raw records
-    const employees = filterEmployees(mockEmployees, filters);
-    const projects = filterProjects(mockProjects, filters);
-    const formations = filterFormations(initialFormationHistory, filters);
+    if (filters.department && filters.department !== 'All') {
+      params.set('department', filters.department);
+    }
+    if (filters.projectId && filters.projectId !== 'All') {
+      params.set('project_id', filters.projectId);
+    }
+    if (filters.searchQuery) {
+      params.set('search_query', filters.searchQuery);
+    }
+    if (filters.dateRange.startDate) {
+      params.set('start_date', filters.dateRange.startDate);
+    }
+    if (filters.dateRange.endDate) {
+      params.set('end_date', filters.dateRange.endDate);
+    }
 
-    // 2. Compute KPIs
-    const kpis = calculateKpiSummary(employees, projects, formations, filters);
+    try {
+      const payload = await authenticatedFetch<FullAnalyticsPayload>(
+        `/analytics/dashboard?${params.toString()}`
+      );
+      return payload;
+    } catch (err) {
+      if (isDemoModeActive()) {
+        console.warn('Backend analytics dashboard call failed; falling back to demo calculation because demo mode is active:', err);
+        // Client-side demo fallback only when demo mode is explicitly enabled
+        const employees = filterEmployees(mockEmployees, filters);
+        const projects = filterProjects(mockProjects, filters);
+        const formations = filterFormations(initialFormationHistory, filters);
 
-    // 3. Trends based on active dateRange preset
-    const preset = filters.dateRange.preset;
-    const awisTrend = mockAwisTrends[preset] || mockAwisTrends['30d'];
-    const projectPerformanceTrend = mockProjectPerformanceTrends[preset] || mockProjectPerformanceTrends['30d'];
+        const kpis = calculateKpiSummary(employees, projects, formations, filters);
+        const preset = filters.dateRange.preset;
+        const awisTrend = mockAwisTrends[preset] || mockAwisTrends['30d'];
+        const projectPerformanceTrend = mockProjectPerformanceTrends[preset] || mockProjectPerformanceTrends['30d'];
 
-    // 4. Detailed sections
-    const workforce = calculateWorkforceAnalytics(employees, projects);
-    const projectsData = calculateProjectAnalytics(projects);
-    const teams = calculateTeamAnalytics(formations);
-    const sustainability = calculateSustainabilityAnalytics(employees, projects);
-    const insights = generateDemoInsights(employees, projects, formations, filters);
+        const workforce = calculateWorkforceAnalytics(employees, projects);
+        const projectsData = calculateProjectAnalytics(projects);
+        const teams = calculateTeamAnalytics(formations);
+        const sustainability = calculateSustainabilityAnalytics(employees, projects);
+        const insights = generateDemoInsights(employees, projects, formations, filters);
 
-    // 5. Overview Workforce Distribution by dimensions
-    const byAvailability: DistributionSlice[] = [
-      { name: 'Available (≥70%)', value: employees.filter(e => e.availabilityScore >= 70).length, percentage: 0, color: '#16a34a' },
-      { name: 'Partially Allocated (40-69%)', value: employees.filter(e => e.availabilityScore >= 40 && e.availabilityScore < 70).length, percentage: 0, color: '#0284c7' },
-      { name: 'Fully Allocated (<40%)', value: employees.filter(e => e.availabilityScore < 40).length, percentage: 0, color: '#f59e0b' }
-    ].map(slice => ({
-      ...slice,
-      percentage: employees.length > 0 ? Math.round((slice.value / employees.length) * 100) : 0
-    }));
+        const byAvailability: DistributionSlice[] = [
+          { name: 'Available (≥70%)', value: employees.filter(e => e.availabilityScore >= 70).length, percentage: 0, color: '#16a34a' },
+          { name: 'Partially Allocated (40-69%)', value: employees.filter(e => e.availabilityScore >= 40 && e.availabilityScore < 70).length, percentage: 0, color: '#0284c7' },
+          { name: 'Fully Allocated (<40%)', value: employees.filter(e => e.availabilityScore < 40).length, percentage: 0, color: '#f59e0b' },
+        ].map(slice => ({
+          ...slice,
+          percentage: employees.length > 0 ? Math.round((slice.value / employees.length) * 100) : 0,
+        }));
 
-    const byWorkload: DistributionSlice[] = workforce.workloadTiers.map(t => ({
-      name: t.label,
-      value: t.employeeCount,
-      percentage: t.percentage,
-      color: t.color
-    }));
+        const byWorkload: DistributionSlice[] = workforce.workloadTiers.map(t => ({
+          name: t.label,
+          value: t.employeeCount,
+          percentage: t.percentage,
+          color: t.color,
+        }));
 
-    const workforceDistribution = {
-      byDepartment: workforce.headcountByDepartment,
-      byRole: workforce.headcountByRole,
-      byAvailability,
-      byWorkload
-    };
+        const workforceDistribution = {
+          byDepartment: workforce.headcountByDepartment,
+          byRole: workforce.headcountByRole,
+          byAvailability,
+          byWorkload,
+        };
 
-    // 6. Team effectiveness comparison points
-    const teamEffectiveness = formations.slice(0, 8).map(f => ({
-      projectName: f.projectName,
-      teamFit: f.teamFitScore,
-      status: f.status,
-      teamSize: f.teamSize
-    }));
+        const teamEffectiveness = formations.slice(0, 8).map(f => ({
+          projectName: f.projectName,
+          teamFit: f.teamFitScore,
+          status: f.status,
+          teamSize: f.teamSize,
+        }));
 
-    return {
-      kpis,
-      awisTrend,
-      projectPerformanceTrend,
-      workforceDistribution,
-      teamEffectiveness,
-      workloadCapacity: workforce.workloadTiers,
-      workforce,
-      projects: projectsData,
-      teams,
-      sustainability,
-      insights
-    };
+        return {
+          kpis,
+          awisTrend,
+          projectPerformanceTrend,
+          workforceDistribution,
+          teamEffectiveness,
+          workloadCapacity: workforce.workloadTiers,
+          workforce,
+          projects: projectsData,
+          teams,
+          sustainability,
+          insights,
+        };
+      }
+      throw err;
+    }
   },
 
   /**
@@ -143,7 +195,7 @@ export const analyticsService = {
     } else if (activeTab === 'projects') {
       const headers = [
         'Project ID', 'Project Name', 'Department', 'Priority', 'Status',
-        'Progress %', 'Risk Level', 'Team Size', 'Team Fit Demo Score', 'Schedule Health', 'Deadline'
+        'Progress %', 'Risk Level', 'Team Size', 'Team Fit %', 'Schedule Health', 'Deadline'
       ];
       const rows = data.projects.tableRows.map(p => [
         p.projectId, p.name, p.department, p.priority, p.status,

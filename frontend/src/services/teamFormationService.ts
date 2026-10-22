@@ -12,13 +12,54 @@ import type {
   FormationHistoryItem,
   FormationKpiData,
   FormationOptionDef,
-  MetricWarning
+  MetricWarning,
+  TeamAlternativeItem,
+  TeamRecommendationResult
 } from '../types/teamFormation';
+import { authenticatedFetch } from './apiClient';
+import { projectService } from './projectService';
+import { employeeService } from './employeeService';
 
 const STORAGE_HISTORY_KEY = 'nexawis_formation_history_v1';
 
+let demoModeOverride: boolean | null = null;
+
+/**
+ * Configure demo mode override dynamically (useful for tests or demo flags).
+ */
+export function setDemoModeOverride(enabled: boolean | null): void {
+  demoModeOverride = enabled;
+}
+
+/**
+ * Determines whether mock fallbacks and synthetic recommendations are permitted.
+ * In production mode or when demo mode is not explicitly configured, mock data is strictly blocked.
+ */
+export function isMockFallbackAllowed(): boolean {
+  if (demoModeOverride !== null) {
+    return demoModeOverride;
+  }
+  const isEnvDemo = typeof import.meta !== 'undefined' && import.meta.env?.VITE_ENABLE_DEMO_MODE === 'true';
+  const isProd = typeof import.meta !== 'undefined' && Boolean(import.meta.env?.PROD);
+  
+  if (isProd) {
+    return isEnvDemo;
+  }
+
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('nexawis_demo_mode') === 'true') {
+      return true;
+    }
+  } catch {}
+
+  return isEnvDemo;
+}
+
 // In-memory or localStorage cache for formation history
 function loadHistory(): FormationHistoryItem[] {
+  if (!isMockFallbackAllowed()) {
+    return [];
+  }
   try {
     const raw = localStorage.getItem(STORAGE_HISTORY_KEY);
     if (raw) {
@@ -45,15 +86,31 @@ let historyCache: FormationHistoryItem[] = loadHistory();
 
 /**
  * Service Layer: Team Formation
- * Decouples mock data from UI so endpoints can be wired up in the future seamlessly.
+ * Connects directly to Phase 8 Constraint-Aware Team Optimization backend endpoints.
+ * In production mode, strictly isolates real API failures and blocks fabricated synthetic fallbacks.
  */
 export const teamFormationService = {
   /**
-   * Retrieve list of projects available for team formation
+   * Retrieve list of projects available for team formation from backend or local cache
    */
   async getAvailableProjects(): Promise<Project[]> {
-    // Simulated network delay (80ms)
-    await new Promise(r => setTimeout(r, 80));
+    try {
+      const res = await projectService.getProjects({ pageSize: 100 });
+      if (res && res.items) {
+        return res.items;
+      }
+    } catch (e) {
+      if (!isMockFallbackAllowed()) {
+        console.error('Failed to load projects from backend in production mode:', e);
+        throw e;
+      }
+      console.warn('Could not load projects from backend API, using local demo fallback:', e);
+    }
+
+    if (!isMockFallbackAllowed()) {
+      return [];
+    }
+
     try {
       const savedProjects = localStorage.getItem('nexawis_projects_v2');
       if (savedProjects) {
@@ -69,10 +126,25 @@ export const teamFormationService = {
   },
 
   /**
-   * Retrieve full employee pool
+   * Retrieve full employee pool from backend or local cache
    */
   async getEmployees(): Promise<Employee[]> {
-    await new Promise(r => setTimeout(r, 50));
+    try {
+      const res = await employeeService.getEmployees({ pageSize: 100 });
+      if (res && res.items) {
+        return res.items as unknown as Employee[];
+      }
+    } catch (e) {
+      if (!isMockFallbackAllowed()) {
+        console.error('Failed to load employees from backend in production mode:', e);
+        throw e;
+      }
+      console.warn('Could not load employees from backend API, using local demo fallback:', e);
+    }
+
+    if (!isMockFallbackAllowed()) {
+      return [];
+    }
     return mockEmployees;
   },
 
@@ -80,15 +152,62 @@ export const teamFormationService = {
    * Retrieve single employee by ID
    */
   async getEmployeeById(id: string): Promise<Employee | undefined> {
+    try {
+      const emp = await employeeService.getEmployeeById(id);
+      if (emp) return emp as unknown as Employee;
+    } catch (e) {
+      if (!isMockFallbackAllowed()) {
+        throw e;
+      }
+    }
+    if (!isMockFallbackAllowed()) {
+      return undefined;
+    }
     return mockEmployees.find(e => e.id === id || e.employeeId === id);
   },
 
   /**
-   * Get formation overview KPI statistics
+   * Get formation overview KPI statistics from backend /teams/kpis
    */
   async getFormationKpis(): Promise<FormationKpiData> {
+    try {
+      const res = await authenticatedFetch<{
+        total_formations: number;
+        total_formations_trend: string;
+        teams_created: number;
+        teams_created_trend: string;
+        average_team_fit: number;
+        average_team_fit_trend: string;
+        workforce_sustainability: number;
+        workforce_sustainability_trend: string;
+      }>('/teams/kpis');
+
+      if (res) {
+        return {
+          totalFormations: res.total_formations,
+          totalFormationsTrend: res.total_formations_trend,
+          teamsCreated: res.teams_created,
+          teamsCreatedTrend: res.teams_created_trend,
+          averageTeamFit: res.average_team_fit,
+          averageTeamFitTrend: res.average_team_fit_trend,
+          workforceSustainability: res.workforce_sustainability,
+          workforceSustainabilityTrend: res.workforce_sustainability_trend,
+        };
+      }
+    } catch (e) {
+      if (!isMockFallbackAllowed()) {
+        console.error('Failed to load team formation KPIs from backend in production mode:', e);
+        throw e;
+      }
+      console.warn('Could not load team formation KPIs from backend API:', e);
+    }
+
+    if (!isMockFallbackAllowed()) {
+      throw new Error('Production mode: Team formation KPIs are unavailable.');
+    }
+
     const history = historyCache;
-    const total = history.length + 23; // base mock offset
+    const total = history.length + 23;
     const activeOrFinal = history.filter(h => h.status !== 'Draft').length + 20;
     const avgFit = Math.round(
       history.reduce((acc, h) => acc + h.teamFitScore, 0) / (history.length || 1) * 10
@@ -98,7 +217,7 @@ export const teamFormationService = {
       ...mockFormationKpiData,
       totalFormations: total,
       teamsCreated: activeOrFinal,
-      averageTeamFit: avgFit || mockFormationKpiData.averageTeamFit
+      averageTeamFit: avgFit || mockFormationKpiData.averageTeamFit,
     };
   },
 
@@ -117,18 +236,237 @@ export const teamFormationService = {
   },
 
   /**
-   * Generate rule-based demonstration recommendations
+   * Generate constraint-aware team recommendations from backend or algorithmic fallback
    */
   async generateTeamRecommendations(
     project: Project,
     config: TeamFormationConfig
-  ): Promise<{ candidates: TeamCandidate[]; metrics: TeamSummaryMetrics }> {
-    // Simulate algorithmic computation latency (850ms)
-    await new Promise(r => setTimeout(r, 850));
+  ): Promise<TeamRecommendationResult> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(project.id);
+
+    if (!isUuid && !isMockFallbackAllowed()) {
+      throw new Error(`Project ID "${project.id}" is not a valid UUID. Real backend project required in production mode.`);
+    }
+
+    if (isUuid) {
+      try {
+        const payload = {
+          target_team_size: config.teamSize,
+          team_size: config.teamSize,
+          formation_option: config.formationOption || 'autonomous_ai',
+          min_availability_percent: config.minAvailability ?? 0,
+          wellbeing_risk_tolerance: config.wellbeingRiskTolerance || 'ModerateAllowed',
+          include_growth_opportunities: config.includeGrowthOpportunities ?? true,
+        };
+
+        const res = await authenticatedFetch<{
+          formation_id?: string;
+          formation_code?: string;
+          project_id: string;
+          project_name: string;
+          formation_option: string;
+          status: string;
+          is_feasible: boolean;
+          unmet_requirements?: string[];
+          feasibility_explanation?: string;
+          infeasibility_reason?: string;
+          candidates?: Array<{
+            id: string;
+            employee_code: string;
+            name: string;
+            avatar_url: string | null;
+            role: string;
+            department: string;
+            assigned_role: string;
+            match_score: number;
+            skill_match_percent: number;
+            performance_score: number | null;
+            availability_percent: number | null;
+            current_workload_percent: number | null;
+            wellbeing_risk: string;
+            awis_score: number | null;
+            is_override?: boolean;
+            needs_review?: boolean;
+            primary_skills?: string[];
+            fulfilled_skills?: string[];
+            why_selected?: {
+              summary: string;
+              strengths: string[];
+              considerations: string[];
+            };
+          }>;
+          recommended_team?: Array<any>;
+          metrics?: {
+            overall_team_fit: number;
+            selected_count: number;
+            target_count: number;
+            skill_coverage_percent: number;
+            covered_skills_count: number;
+            total_skills_required: number;
+            workload_balance_score: number;
+            sustainability_score: number;
+            availability_coverage_score: number;
+            warnings?: Array<{
+              id: string;
+              type: 'warning' | 'alert' | 'info';
+              title: string;
+              message: string;
+            }>;
+          };
+          alternatives?: Array<{
+            alternative_id?: string;
+            option_id?: string;
+            strategy_label?: string;
+            description?: string;
+            members?: Array<any>;
+            candidates?: Array<any>;
+            metrics?: any;
+            trade_offs?: string[];
+            trade_off?: string;
+            team_fit_score?: number;
+          }>;
+        }>(`/teams/projects/${project.id}/team-recommendation`, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+
+        if (res) {
+          const rawCandidates = res.candidates || res.recommended_team || [];
+          const mappedCandidates: TeamCandidate[] = rawCandidates.map((c) => ({
+            id: String(c.id),
+            employeeId: c.employee_code || String(c.id),
+            name: c.name,
+            avatarUrl: c.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256',
+            role: c.role || 'Engineer',
+            department: c.department || 'Engineering',
+            assignedRole: c.assigned_role || c.role || 'Contributor',
+            matchScore: Math.round(c.match_score ?? 85),
+            skillMatchPercent: Math.round(c.skill_match_percent ?? 80),
+            performanceScore: Math.round(c.performance_score ?? 85),
+            availabilityPercent: Math.round(c.availability_percent ?? 80),
+            currentWorkloadPercent: Math.round(c.current_workload_percent ?? 50),
+            wellbeingRisk: (c.wellbeing_risk as 'Low' | 'Moderate' | 'High') || 'Low',
+            awisScore: Math.round(c.awis_score ?? c.match_score ?? 85),
+            isOverride: Boolean(c.is_override),
+            primarySkills: c.primary_skills || [],
+            allSkills: (c.fulfilled_skills || []).map((s: string) => ({
+              id: s.toLowerCase().replace(/\s+/g, '-'),
+              name: s,
+              category: 'Core',
+              proficiency: 90,
+              isPrimary: true,
+            })),
+            whySelected: c.why_selected || {
+              summary: `Selected as ${c.assigned_role || c.role} based on Phase 6 AWIS scoring.`,
+              strengths: [`Direct match for project requirements`, `Available within workload safety threshold`],
+              considerations: c.needs_review ? ['Workload requires management review (projected >140%)'] : [],
+            },
+          }));
+
+          const bm = res.metrics;
+          const mappedMetrics: TeamSummaryMetrics = bm ? {
+            overallTeamFit: Math.round(bm.overall_team_fit ?? 85),
+            selectedCount: bm.selected_count ?? mappedCandidates.length,
+            targetCount: bm.target_count ?? config.teamSize,
+            skillCoveragePercent: Math.round(bm.skill_coverage_percent ?? 100),
+            coveredSkillsCount: bm.covered_skills_count ?? config.requiredSkills.length,
+            totalSkillsRequired: bm.total_skills_required ?? config.requiredSkills.length,
+            workloadBalanceScore: Math.round(bm.workload_balance_score ?? 85),
+            sustainabilityScore: Math.round(bm.sustainability_score ?? 90),
+            availabilityCoverageScore: Math.round(bm.availability_coverage_score ?? 80),
+            warnings: (bm.warnings || []).map((w, idx) => ({
+              id: w.id || `warn-${idx}`,
+              type: w.type || 'info',
+              title: w.title || 'Notice',
+              message: w.message || '',
+            })),
+          } : teamFormationService.calculateTeamMetrics(mappedCandidates, config);
+
+          // Map distinct alternatives
+          const mappedAlternatives: TeamAlternativeItem[] = (res.alternatives || []).map((alt) => {
+            const altMembers: TeamCandidate[] = (alt.members || alt.candidates || []).map((c: any) => ({
+              id: String(c.id),
+              employeeId: c.employee_code || String(c.id),
+              name: c.name,
+              avatarUrl: c.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256',
+              role: c.role || 'Engineer',
+              department: c.department || 'Engineering',
+              assignedRole: c.assigned_role || c.role || 'Contributor',
+              matchScore: Math.round(c.match_score ?? 85),
+              skillMatchPercent: Math.round(c.skill_match_percent ?? 80),
+              performanceScore: Math.round(c.performance_score ?? 85),
+              availabilityPercent: Math.round(c.availability_percent ?? 80),
+              currentWorkloadPercent: Math.round(c.current_workload_percent ?? 50),
+              wellbeingRisk: (c.wellbeing_risk as 'Low' | 'Moderate' | 'High') || 'Low',
+              awisScore: Math.round(c.awis_score ?? c.match_score ?? 85),
+              isOverride: false,
+              primarySkills: c.primary_skills || [],
+              allSkills: [],
+              whySelected: c.why_selected || {
+                summary: `Recommended candidate under alternative strategy.`,
+                strengths: [],
+                considerations: [],
+              },
+            }));
+
+            const altBm = alt.metrics;
+            const altMetrics: TeamSummaryMetrics = altBm ? {
+              overallTeamFit: Math.round(altBm.overall_team_fit ?? alt.team_fit_score ?? 85),
+              selectedCount: altBm.selected_count ?? altMembers.length,
+              targetCount: altBm.target_count ?? config.teamSize,
+              skillCoveragePercent: Math.round(altBm.skill_coverage_percent ?? 100),
+              coveredSkillsCount: altBm.covered_skills_count ?? 0,
+              totalSkillsRequired: altBm.total_skills_required ?? 0,
+              workloadBalanceScore: Math.round(altBm.workload_balance_score ?? 85),
+              sustainabilityScore: Math.round(altBm.sustainability_score ?? 90),
+              availabilityCoverageScore: Math.round(altBm.availability_coverage_score ?? 80),
+              warnings: (altBm.warnings || []).map((w: any, idx: number) => ({
+                id: w.id || `alt-warn-${idx}`,
+                type: w.type || 'info',
+                title: w.title || 'Notice',
+                message: w.message || '',
+              })),
+            } : teamFormationService.calculateTeamMetrics(altMembers, config);
+
+            return {
+              alternativeId: alt.alternative_id || alt.option_id || 'alt',
+              strategyLabel: alt.strategy_label || 'Alternative Strategy',
+              description: alt.description || '',
+              members: altMembers,
+              metrics: altMetrics,
+              tradeOffs: alt.trade_offs || (alt.trade_off ? [alt.trade_off] : []),
+            };
+          });
+
+          return {
+            candidates: mappedCandidates,
+            metrics: mappedMetrics,
+            formationId: res.formation_id,
+            formationCode: res.formation_code,
+            isFeasible: res.is_feasible,
+            feasibilityExplanation: res.feasibility_explanation || res.infeasibility_reason,
+            unmetRequirements: res.unmet_requirements,
+            alternatives: mappedAlternatives,
+          };
+        }
+      } catch (e) {
+        if (!isMockFallbackAllowed()) {
+          console.error('Backend recommendation generation failed in production mode:', e);
+          throw e;
+        }
+        console.warn('Backend recommendation generation failed, falling back to client-side engine in demo mode:', e);
+      }
+    }
+
+    if (!isMockFallbackAllowed()) {
+      throw new Error('Production mode: Real backend API failed to generate team recommendations.');
+    }
+
+    // Client-side fallback algorithm (demo mode only)
+    await new Promise(r => setTimeout(r, 450));
 
     const formationOption = config.formationOption || 'autonomous_ai';
 
-    // Dynamic weighting based on selected formation option
     let skillWeight = 0.40;
     let availWeight = 0.20;
     let perfWeight = 0.20;
@@ -156,9 +494,7 @@ export const teamFormationService = {
       perfWeight = 0.15;
     }
 
-    // Score all available employees against configuration
     const scoredCandidates: Array<{ candidate: TeamCandidate; rawScore: number }> = mockEmployees.map(emp => {
-      // 1. Skill Match Score (0 - 100)
       let matchedCount = 0;
       let proficiencySum = 0;
 
@@ -175,25 +511,19 @@ export const teamFormationService = {
         ? Math.min(Math.round((proficiencySum / (config.requiredSkills.length * 100)) * 100), 100)
         : Math.round(emp.awisFitScore);
 
-      // 2. Availability Score (0 - 100)
       const availabilityScore = emp.availabilityScore;
-
-      // 3. Workload Balance Score (inverted workload, higher is better)
       const workloadScore = Math.max(0, 100 - emp.workloadScore);
 
-      // 4. Wellbeing Factor
       let wellbeingMultiplier = emp.wellbeingRisk === 'Low' ? 1.0 : emp.wellbeingRisk === 'Moderate' ? 0.82 : 0.55;
       if (formationOption === 'fatigue_safe' && emp.wellbeingRisk === 'High') {
-        wellbeingMultiplier = 0.2; // severely penalize high risk in fatigue safe mode
+        wellbeingMultiplier = 0.2;
       }
 
-      // 5. Growth Opportunity
       let growthBonus = 0;
       if (config.includeGrowthOpportunities && emp.growthPotential > 75) {
         growthBonus = formationOption === 'growth_mentorship' ? 12 : 6;
       }
 
-      // Composite Match Score
       const rawScore = (
         skillMatchPercent * skillWeight +
         availabilityScore * availWeight +
@@ -203,7 +533,6 @@ export const teamFormationService = {
 
       const finalMatchScore = Math.min(Math.max(Math.round(rawScore), 50), 99);
 
-      // Determine Assigned Role based on skills & preferences
       let assignedRole = emp.role;
       if (emp.skills.some(s => s.name.includes('AI') || s.name.includes('PyTorch'))) {
         assignedRole = 'Lead AI/ML Engineer';
@@ -219,7 +548,6 @@ export const teamFormationService = {
         assignedRole = 'Security & Compliance Lead';
       }
 
-      // Generate demonstration explanation rationale
       const strengths: string[] = [];
       const considerations: string[] = [];
 
@@ -274,7 +602,6 @@ export const teamFormationService = {
       return { candidate, rawScore: finalMatchScore };
     });
 
-    // Filter by wellbeing risk tolerance if strict
     let filtered = scoredCandidates;
     if (config.wellbeingRiskTolerance === 'LowOnly') {
       const lowOnly = scoredCandidates.filter(c => c.candidate.wellbeingRisk === 'Low');
@@ -283,18 +610,15 @@ export const teamFormationService = {
       }
     }
 
-    // Sort descending by match score
     filtered.sort((a, b) => b.rawScore - a.rawScore);
-
-    // Pick top candidates up to target team size
     const selectedCandidates = filtered.slice(0, config.teamSize).map(item => item.candidate);
-
-    // Compute team metrics
     const metrics = teamFormationService.calculateTeamMetrics(selectedCandidates, config);
 
     return {
       candidates: selectedCandidates,
-      metrics
+      metrics,
+      isFeasible: true,
+      alternatives: []
     };
   },
 
@@ -330,16 +654,13 @@ export const teamFormationService = {
       };
     }
 
-    // 1. Overall Team Fit (average match score + synergy bonus)
     const avgMatch = candidates.reduce((acc, c) => acc + c.matchScore, 0) / selectedCount;
-    // Synergy bonus if team size matches target and multi-department diversity exists
     const depts = new Set(candidates.map(c => c.department)).size;
     const diversityBonus = depts > 1 ? 2.5 : 0;
     const overallTeamFit = Math.min(Math.round(avgMatch + diversityBonus), 99);
 
-    // 2. Skill Coverage
     const allAssignedSkillNames = new Set(
-      candidates.flatMap(c => c.allSkills.map(s => s.name.toLowerCase()))
+      candidates.flatMap(c => (c.allSkills || []).map(s => s.name.toLowerCase()))
     );
 
     let coveredSkillsCount = 0;
@@ -357,11 +678,9 @@ export const teamFormationService = {
       ? Math.round((coveredSkillsCount / config.requiredSkills.length) * 100)
       : 100;
 
-    // 3. Workload Balance
     const avgWorkload = candidates.reduce((acc, c) => acc + c.currentWorkloadPercent, 0) / selectedCount;
     const workloadBalanceScore = Math.max(Math.round(100 - avgWorkload * 0.65), 50);
 
-    // 4. Sustainability Score
     let sustainabilityDeduction = 0;
     candidates.forEach(c => {
       if (c.wellbeingRisk === 'High') sustainabilityDeduction += 20;
@@ -369,11 +688,9 @@ export const teamFormationService = {
     });
     const sustainabilityScore = Math.max(100 - sustainabilityDeduction, 45);
 
-    // 5. Availability Coverage
     const avgAvailability = candidates.reduce((acc, c) => acc + c.availabilityPercent, 0) / selectedCount;
     const availabilityCoverageScore = Math.round(avgAvailability);
 
-    // 6. Real-time warnings & advice
     const warnings: MetricWarning[] = [];
 
     if (selectedCount < targetCount) {
@@ -442,14 +759,28 @@ export const teamFormationService = {
     currentTeamIds: string[],
     filterSkill?: string
   ): Promise<Employee[]> {
-    await new Promise(r => setTimeout(r, 60));
-    return mockEmployees.filter(emp => {
-      if (currentTeamIds.includes(emp.id)) return false;
-      if (filterSkill) {
-        return emp.skills.some(s => s.name.toLowerCase().includes(filterSkill.toLowerCase()));
+    try {
+      const allEmps = await this.getEmployees();
+      return allEmps.filter(emp => {
+        if (currentTeamIds.includes(emp.id)) return false;
+        if (filterSkill && emp.skills) {
+          return emp.skills.some(s => s.name.toLowerCase().includes(filterSkill.toLowerCase()));
+        }
+        return true;
+      });
+    } catch (e) {
+      if (!isMockFallbackAllowed()) {
+        console.error('Failed to load alternative candidates in production mode:', e);
+        return [];
       }
-      return true;
-    });
+      return mockEmployees.filter(emp => {
+        if (currentTeamIds.includes(emp.id)) return false;
+        if (filterSkill) {
+          return emp.skills.some(s => s.name.toLowerCase().includes(filterSkill.toLowerCase()));
+        }
+        return true;
+      });
+    }
   },
 
   /**
@@ -458,7 +789,7 @@ export const teamFormationService = {
   async saveFormationDraft(
     data: Omit<FormationHistoryItem, 'id' | 'createdAt' | 'updatedAt' | 'status'>
   ): Promise<FormationHistoryItem> {
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 150));
     const now = new Date().toISOString();
     const id = `FRM-DRAFT-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -476,12 +807,74 @@ export const teamFormationService = {
   },
 
   /**
-   * Finalize a team formation (adds to history with 'Finalized' status)
+   * Finalize a team formation (commits persistent ProjectAllocation records in backend)
    */
   async finalizeFormation(
-    data: Omit<FormationHistoryItem, 'id' | 'createdAt' | 'updatedAt' | 'status'>
+    data: Omit<FormationHistoryItem, 'id' | 'createdAt' | 'updatedAt' | 'status'> & { formationId?: string }
   ): Promise<FormationHistoryItem> {
-    await new Promise(r => setTimeout(r, 350));
+    const formationId = data.formationId;
+
+    if (!formationId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formationId)) {
+      if (!isMockFallbackAllowed()) {
+        throw new Error(`Production mode: Valid backend formationId is required to finalize formation. Received: "${formationId}".`);
+      }
+    }
+
+    if (formationId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formationId)) {
+      try {
+        const payload = {
+          notes: data.notes || `Finalized formation for ${data.projectName}.`,
+          selected_candidate_ids: data.members
+            .map(m => m.id)
+            .filter(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)),
+        };
+
+        const res = await authenticatedFetch<{
+          formation_id: string;
+          project_id: string;
+          status: string;
+          assigned_member_count: number;
+          allocated_members: Array<any>;
+          message: string;
+        }>(`/teams/recommendations/${formationId}/finalize`, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+
+        if (res) {
+          const now = new Date().toISOString();
+          const newItem: FormationHistoryItem = {
+            id: `FRM-${formationId.slice(0, 8).toUpperCase()}`,
+            formationId: formationId,
+            projectId: data.projectId,
+            projectName: data.projectName,
+            projectDepartment: data.projectDepartment,
+            createdAt: now,
+            updatedAt: now,
+            teamSize: res.assigned_member_count || data.teamSize,
+            teamFitScore: data.teamFitScore,
+            status: 'Finalized',
+            members: data.members,
+            metrics: data.metrics,
+            notes: data.notes,
+          };
+
+          historyCache = [newItem, ...historyCache.filter(h => h.formationId !== formationId && h.id !== newItem.id)];
+          persistHistory(historyCache);
+          return newItem;
+        }
+      } catch (e) {
+        console.error('Backend finalization error:', e);
+        throw e;
+      }
+    }
+
+    if (!isMockFallbackAllowed()) {
+      throw new Error('Production mode: Finalization failed and local demo persistence is disabled.');
+    }
+
+    // Local fallback persistence (demo mode only)
+    await new Promise(r => setTimeout(r, 200));
     const now = new Date().toISOString();
     const count = historyCache.length + 82;
     const id = `FRM-2026-${String(count).padStart(3, '0')}`;
@@ -500,10 +893,90 @@ export const teamFormationService = {
   },
 
   /**
+   * Reject / archive a team recommendation snapshot
+   */
+  async rejectFormation(formationId: string): Promise<void> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formationId);
+    if (isUuid) {
+      try {
+        await authenticatedFetch(`/teams/recommendations/${formationId}/reject`, {
+          method: 'POST',
+        });
+      } catch (e) {
+        console.warn('Backend rejection error:', e);
+      }
+    }
+  },
+
+  /**
    * Retrieve all formation history records
    */
   async getFormationHistory(): Promise<FormationHistoryItem[]> {
-    await new Promise(r => setTimeout(r, 50));
+    try {
+      const res = await authenticatedFetch<Array<{
+        id: string;
+        formation_code: string;
+        project_id: string;
+        project_name: string;
+        project_department: string;
+        formation_option: string;
+        status: string;
+        team_size: number;
+        team_fit_score: number | null;
+        skill_coverage_percent: number | null;
+        sustainability_score: number | null;
+        created_at: string;
+        updated_at: string;
+        notes: string | null;
+        metrics: Record<string, any>;
+        members: Array<Record<string, any>>;
+      }>>('/teams/history');
+
+      if (Array.isArray(res)) {
+        const mapped: FormationHistoryItem[] = res.map(item => ({
+          id: item.formation_code || item.id,
+          formationId: item.id,
+          projectId: item.project_id,
+          projectName: item.project_name,
+          projectDepartment: item.project_department,
+          createdAt: typeof item.created_at === 'string' ? item.created_at : new Date(item.created_at).toISOString(),
+          updatedAt: typeof item.updated_at === 'string' ? item.updated_at : new Date(item.updated_at).toISOString(),
+          teamSize: item.team_size,
+          teamFitScore: item.team_fit_score ?? 0,
+          status: (item.status as any) || 'Draft',
+          members: (item.members || []).map(m => ({
+            id: String(m.id || m.employee_id || ''),
+            name: m.name || 'Team Member',
+            avatarUrl: m.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256',
+            role: m.role || '',
+            assignedRole: m.assigned_role || m.role || '',
+            awisScore: m.awis_score ?? 0,
+            wellbeingRisk: (m.wellbeing_risk as any) || 'Low',
+            matchScore: m.match_score ?? 0,
+          })),
+          metrics: {
+            skillCoverage: item.metrics?.skill_coverage ?? item.skill_coverage_percent ?? 0,
+            workloadBalance: item.metrics?.workload_balance ?? 0,
+            sustainability: item.metrics?.sustainability ?? item.sustainability_score ?? 0,
+            availabilityCoverage: item.metrics?.availability_coverage ?? 0,
+          },
+          notes: item.notes || undefined,
+        }));
+        historyCache = mapped;
+        persistHistory(historyCache);
+        return mapped;
+      }
+    } catch (e) {
+      if (!isMockFallbackAllowed()) {
+        console.error('Backend formation history request failed in production mode:', e);
+        throw e;
+      }
+      console.warn('Could not load team formation history from backend API:', e);
+    }
+
+    if (!isMockFallbackAllowed()) {
+      return [];
+    }
     return [...historyCache];
   },
 
@@ -511,6 +984,6 @@ export const teamFormationService = {
    * Retrieve single formation record by ID
    */
   async getFormationById(id: string): Promise<FormationHistoryItem | undefined> {
-    return historyCache.find(h => h.id === id);
+    return historyCache.find(h => h.id === id || h.formationId === id);
   }
 };

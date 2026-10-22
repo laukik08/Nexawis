@@ -3,11 +3,11 @@ import { ProjectTable } from '../../components/projects/ProjectTable';
 import { ProjectCards } from '../../components/projects/ProjectCards';
 import { CreateProjectModal } from '../../components/projects/CreateProjectModal';
 import { useProjects } from '../../context/ProjectsContext';
-import { Plus, FolderKanban, RotateCcw } from 'lucide-react';
+import { Plus, FolderKanban, RotateCcw, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
 export function ProjectsIndex() {
-  const { projects } = useProjects();
+  const { projects, loading, error, refreshProjects } = useProjects();
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -155,7 +155,7 @@ export function ProjectsIndex() {
           <button 
             onClick={() => setIsCreateModalOpen(true)}
             data-cursor="button"
-            className="flex items-center space-x-2 btn-primary px-5 py-2.5 rounded-xl font-bold shrink-0 text-sm"
+            className="flex items-center space-x-2 btn-primary px-5 py-2.5 rounded-xl font-bold shrink-0 text-sm cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Create Project</span>
@@ -200,10 +200,32 @@ export function ProjectsIndex() {
         onClearAll={handleClearAll}
         activeFilterCount={activeFilterCount}
       />
+
+      {/* Error Alert */}
+      {error && (
+        <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-between">
+          <div className="flex items-center space-x-3 text-red-400">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <span className="text-sm font-medium">{error}</span>
+          </div>
+          <button 
+            onClick={() => refreshProjects()}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-300 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
       
       {/* Main Content: Table or Cards */}
       <div className="mt-4">
-        {filteredProjects.length === 0 ? (
+        {loading ? (
+          <div className="card-base p-16 flex flex-col items-center justify-center space-y-4">
+            <Loader2 className="w-8 h-8 text-[--color-accent-cyan] animate-spin" />
+            <p className="text-sm text-[--color-text-secondary] font-medium">Loading workspace projects...</p>
+          </div>
+        ) : filteredProjects.length === 0 ? (
           <div className="card-base p-12 text-center flex flex-col items-center justify-center">
             <div className="w-12 h-12 rounded-2xl bg-[--color-surface-2] flex items-center justify-center text-[--color-text-muted] mb-4">
               <FolderKanban className="w-6 h-6" />
@@ -212,15 +234,27 @@ export function ProjectsIndex() {
               No matching projects found
             </h3>
             <p className="text-xs text-[--color-text-secondary] max-w-sm mb-6">
-              Try adjusting or clearing your search filters to find what you are looking for.
+              {activeFilterCount > 0 
+                ? "Try adjusting or clearing your search filters to find what you are looking for."
+                : "No project profiles have been created in this workspace yet."}
             </p>
-            <button
-              onClick={handleClearAll}
-              className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-[--color-surface-2] hover:bg-[--color-border-strong] text-xs font-bold text-[--color-text-primary] transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset All Filters</span>
-            </button>
+            <div className="flex items-center space-x-3">
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-[--color-surface-2] hover:bg-[--color-border-strong] text-xs font-bold text-[--color-text-primary] transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset All Filters</span>
+                </button>
+              )}
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="btn-primary px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                Create First Project
+              </button>
+            </div>
           </div>
         ) : (
           <>

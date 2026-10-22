@@ -40,13 +40,20 @@ import { Contact } from './pages/company/Contact';
 import { PrivacyPolicy } from './pages/legal/PrivacyPolicy';
 import { TermsOfService } from './pages/legal/TermsOfService';
 import { CookiePolicy } from './pages/legal/CookiePolicy';
+import { SignInPage } from './pages/auth/SignInPage';
+import { SignUpPage } from './pages/auth/SignUpPage';
 
 function App() {
   return (
     <>
       <Router>
         <Routes>
-        <Route path="/" element={<PublicLayout />}>
+          {/* Clerk Authentication Routes */}
+          <Route path="/sign-in/*" element={<SignInPage />} />
+          <Route path="/sign-up/*" element={<SignUpPage />} />
+
+          <Route path="/" element={<PublicLayout />}>
+
           <Route index element={<LandingPage />} />
           
           {/* Product Routes */}

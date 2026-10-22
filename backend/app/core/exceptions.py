@@ -171,6 +171,23 @@ class WorkspaceAccessDeniedError(AuthorizationError):
         )
 
 
+class ValidationError(AppException):
+    """Raised when an operation or payload fails domain validation rules."""
+
+    def __init__(self, message: str = "Validation failed.", details: Optional[Any] = None):
+        super().__init__(
+            message=message,
+            code="VALIDATION_ERROR",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            details=details,
+        )
+
+
+# Backward-compatible convenience aliases
+NotFoundError = ResourceNotFoundError
+AppError = AppException
+
+
 def create_error_response(
     status_code: int,
     code: str,
@@ -242,7 +259,9 @@ def register_exception_handlers(app: FastAPI) -> None:
             403: "FORBIDDEN",
             404: "NOT_FOUND",
             405: "METHOD_NOT_ALLOWED",
+            409: "CONFLICT",
             413: "PAYLOAD_TOO_LARGE",
+            422: "VALIDATION_ERROR",
             429: "RATE_LIMIT_EXCEEDED",
             500: "INTERNAL_SERVER_ERROR",
             503: "SERVICE_UNAVAILABLE",
@@ -255,6 +274,54 @@ def register_exception_handlers(app: FastAPI) -> None:
             message=str(exc.detail),
             headers=exc.headers,
         )
+
+    # Database integrity and concurrency exception handlers
+    try:
+        from sqlalchemy.exc import IntegrityError, DBAPIError
+
+        @app.exception_handler(IntegrityError)
+        async def integrity_exception_handler(
+            request: Request, exc: IntegrityError
+        ) -> JSONResponse:
+            orig_msg = str(getattr(exc, "orig", exc)).lower()
+            logger.warning(
+                f"Database integrity conflict at {request.method} {request.url.path}: {orig_msg}"
+            )
+            message = "A conflict occurred with an existing resource constraint or unique key."
+            if "uq_project_employee_allocation" in orig_msg or "unique" in orig_msg:
+                message = "The specified employee is already allocated to this project."
+            elif "foreign key" in orig_msg:
+                message = "Referenced resource does not exist or has been removed."
+
+            return create_error_response(
+                status_code=status.HTTP_409_CONFLICT,
+                code="CONFLICT",
+                message=message,
+            )
+
+        @app.exception_handler(DBAPIError)
+        async def dbapi_concurrency_exception_handler(
+            request: Request, exc: DBAPIError
+        ) -> JSONResponse:
+            orig = getattr(exc, "orig", None)
+            pgcode = getattr(orig, "pgcode", None) or getattr(orig, "sqlstate", None) or ""
+            err_text = str(exc).lower()
+
+            # PostgreSQL 40P01 = deadlock_detected, 40001 = serialization_failure
+            if pgcode in ("40P01", "40001") or "deadlock" in err_text or "could not serialize" in err_text:
+                logger.warning(
+                    f"Concurrency conflict ({pgcode or 'deadlock/serialization'}) at {request.method} {request.url.path}: {err_text}"
+                )
+                return create_error_response(
+                    status_code=status.HTTP_409_CONFLICT,
+                    code="CONCURRENCY_CONFLICT",
+                    message="A concurrent database modification conflicted with this transaction. Please retry the request.",
+                )
+
+            # Re-raise standard database operational errors to be safely handled by unhandled_exception_handler
+            raise exc
+    except ImportError:
+        pass
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(

@@ -77,28 +77,41 @@ def create_test_jwt(
     return jwt.encode(payload, private_key, algorithm="RS256")
 
 
+from sqlalchemy.pool import StaticPool
+
+
 @pytest_asyncio.fixture
-async def auth_test_db():
-    """Provides an isolated async SQLite database session for auth tests."""
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+async def auth_engine():
+    """Provides an isolated in-memory SQLite engine backed by StaticPool."""
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        echo=False,
+    )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
-    session_factory = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-
-    async with session_factory() as session:
-        yield session
-
+    yield engine
     await engine.dispose()
 
 
 @pytest_asyncio.fixture
-async def auth_client(auth_test_db: AsyncSession):
-    """Provides an AsyncClient wired with the test DB session and verification key."""
+async def auth_test_db(auth_engine):
+    """Provides a direct AsyncSession for manual database state assertions."""
+    session_factory = async_sessionmaker(bind=auth_engine, class_=AsyncSession, expire_on_commit=False)
+    async with session_factory() as session:
+        yield session
+
+
+@pytest_asyncio.fixture
+async def auth_client(auth_engine):
+    """Provides an AsyncClient where every request receives its own session."""
+    session_factory = async_sessionmaker(bind=auth_engine, class_=AsyncSession, expire_on_commit=False)
     set_test_verification_key(TEST_PUBLIC_KEY, ["RS256"])
 
     async def _override_db():
-        yield auth_test_db
+        async with session_factory() as session:
+            yield session
 
     app.dependency_overrides[get_db_session] = _override_db
 
@@ -108,6 +121,7 @@ async def auth_client(auth_test_db: AsyncSession):
 
     app.dependency_overrides.clear()
     set_test_verification_key(None, None)
+
 
 
 # ------------------------------------------------------------------------------
@@ -470,5 +484,94 @@ def test_clerk_pem_verification_and_unconfigured_behavior():
     # Restore
     settings.CLERK_JWKS_URL = original_jwks
     settings.CLERK_ISSUER = original_iss
+
+
+def test_clerk_issuer_and_azp_validation():
+    """Verify strict issuer, audience, azp, and nbf claim validation."""
+    from app.core.clerk import verify_clerk_token
+    from app.core.config import settings
+    from app.core.exceptions import InvalidTokenError
+
+    set_test_verification_key(None, None)
+    original_pem = settings.CLERK_PEM_PUBLIC_KEY
+    original_iss = settings.CLERK_ISSUER
+    original_azp = settings.CLERK_AUTHORIZED_PARTIES
+
+    try:
+        settings.CLERK_PEM_PUBLIC_KEY = TEST_PUBLIC_KEY
+        settings.CLERK_ISSUER = "https://choice-jennet-8525.clerk.accounts.dev"
+        settings.CLERK_AUTHORIZED_PARTIES = ["https://nexawis.com", "http://localhost:5173"]
+
+        # 1. Matching issuer and authorized party passes
+        good_token = create_test_jwt(
+            sub="user_valid_claims",
+            extra_claims={
+                "iss": "https://choice-jennet-8525.clerk.accounts.dev",
+                "azp": "http://localhost:5173",
+            },
+        )
+        payload = verify_clerk_token(good_token)
+        assert payload["sub"] == "user_valid_claims"
+
+        # 2. Issuer mismatch is strictly rejected
+        bad_iss_token = create_test_jwt(
+            sub="user_bad_iss",
+            extra_claims={
+                "iss": "https://evil-impersonator.clerk.accounts.dev",
+                "azp": "http://localhost:5173",
+            },
+        )
+        with pytest.raises(InvalidTokenError, match="issuer"):
+            verify_clerk_token(bad_iss_token)
+
+        # 3. Unauthorized azp is strictly rejected
+        bad_azp_token = create_test_jwt(
+            sub="user_bad_azp",
+            extra_claims={
+                "iss": "https://choice-jennet-8525.clerk.accounts.dev",
+                "azp": "https://unauthorized-attacker.com",
+            },
+        )
+        with pytest.raises(InvalidTokenError, match="Unauthorized token party"):
+            verify_clerk_token(bad_azp_token)
+
+        # 4. Token with future nbf timestamp is rejected
+        future_nbf_token = create_test_jwt(
+            sub="user_future_nbf",
+            extra_claims={
+                "iss": "https://choice-jennet-8525.clerk.accounts.dev",
+                "azp": "http://localhost:5173",
+                "nbf": int((datetime.now(timezone.utc) + timedelta(hours=2)).timestamp()),
+            },
+        )
+        with pytest.raises(InvalidTokenError, match="not yet valid"):
+            verify_clerk_token(future_nbf_token)
+
+    finally:
+        settings.CLERK_PEM_PUBLIC_KEY = original_pem
+        settings.CLERK_ISSUER = original_iss
+        settings.CLERK_AUTHORIZED_PARTIES = original_azp
+
+
+@pytest.mark.asyncio
+async def test_subsequent_provisioning_idempotency(auth_client: AsyncClient):
+    """Verify that multiple requests for a new user safely provision and never create duplicate records."""
+    new_sub = f"user_idempotent_{uuid.uuid4().hex[:8]}"
+    token = create_test_jwt(sub=new_sub, name="Idempotent User")
+
+    resp1 = await auth_client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert resp1.status_code == 200
+    user_id_1 = resp1.json()["user"]["id"]
+    ws_id_1 = resp1.json()["active_workspace_id"]
+
+    resp2 = await auth_client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert resp2.status_code == 200
+    user_id_2 = resp2.json()["user"]["id"]
+    ws_id_2 = resp2.json()["active_workspace_id"]
+
+    assert user_id_1 == user_id_2
+    assert ws_id_1 == ws_id_2
+
+
 
 

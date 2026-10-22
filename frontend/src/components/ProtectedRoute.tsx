@@ -3,22 +3,25 @@ import { useAuth } from '../context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 export function ProtectedRoute() {
-  const { user, loading } = useAuth();
+  const { isSignedIn, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[--color-bg-base] flex items-center justify-center">
+      <div className="min-h-screen bg-[--color-page-bg] flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-8 h-8 text-[--color-accent-cyan] animate-spin" />
+        <span className="text-xs font-semibold text-[--color-text-secondary] tracking-wide">
+          Verifying security credentials...
+        </span>
       </div>
     );
   }
 
-  if (!user) {
-    // Redirect to login if unauthenticated, saving the attempted path
-    // Wait, since we don't have a login page yet, we can redirect to home /
-    return <Navigate to="/" state={{ from: location }} replace />;
+  if (!isSignedIn) {
+    // Redirect to Clerk sign-in, saving the attempted location for subsequent return
+    return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
   return <Outlet />;
 }
+

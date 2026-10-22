@@ -60,7 +60,7 @@ class Employee(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     department: Mapped[str] = mapped_column(String(100), nullable=False)
     designation: Mapped[str] = mapped_column(String(100), nullable=False)
-    experience_years: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    experience_years: Mapped[Optional[float]] = mapped_column(Float, default=None, nullable=True)
     
     # Employment Status and Details
     employment_status: Mapped[str] = mapped_column(
@@ -87,13 +87,13 @@ class Employee(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     performance_score: Mapped[float] = mapped_column(Float, default=80.0, nullable=False)
     performance_trend: Mapped[str] = mapped_column(String(20), default="stable", nullable=False)
     availability_score: Mapped[float] = mapped_column(Float, default=100.0, nullable=False)
-    current_workload_percent: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    current_workload_percent: Mapped[Optional[float]] = mapped_column(Float, default=None, nullable=True)
     growth_potential: Mapped[float] = mapped_column(Float, default=70.0, nullable=False)
     collaboration_score: Mapped[float] = mapped_column(Float, default=80.0, nullable=False)
     task_completion_rate: Mapped[float] = mapped_column(Float, default=90.0, nullable=False)
 
     # Sensitive Wellbeing Metrics (Access restricted by role)
-    mental_fatigue_score: Mapped[float] = mapped_column(Float, default=20.0, nullable=False)
+    mental_fatigue_score: Mapped[Optional[float]] = mapped_column(Float, default=None, nullable=True)
     wellbeing_risk: Mapped[str] = mapped_column(String(20), default="Low", nullable=False)
 
     # Qualitative explainability insights cache

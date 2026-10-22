@@ -8,7 +8,8 @@ import type {
   FormationHistoryItem, 
   FormationKpiData,
   FormationOptionId,
-  FormationOptionDef
+  FormationOptionDef,
+  TeamAlternativeItem
 } from '../types/teamFormation';
 import { teamFormationService } from '../services/teamFormationService';
 import { mockFormationOptions } from '../data/mockTeamFormations';
@@ -36,6 +37,11 @@ interface TeamFormationContextType {
   isGenerating: boolean;
   generateRecommendations: () => Promise<void>;
   
+  activeFormationId: string | null;
+  activeFormationCode: string | null;
+  alternatives: TeamAlternativeItem[];
+  applyAlternative: (alternativeId: string) => void;
+
   candidates: TeamCandidate[];
   metrics: TeamSummaryMetrics | null;
   replaceCandidate: (oldCandidateId: string, newEmployee: Employee, role?: string) => void;
@@ -102,6 +108,10 @@ export function TeamFormationProvider({ children }: { children: React.ReactNode 
 
   const [candidates, setCandidates] = useState<TeamCandidate[]>([]);
   const [metrics, setMetrics] = useState<TeamSummaryMetrics | null>(null);
+
+  const [activeFormationId, setActiveFormationId] = useState<string | null>(null);
+  const [activeFormationCode, setActiveFormationCode] = useState<string | null>(null);
+  const [alternatives, setAlternatives] = useState<TeamAlternativeItem[]>([]);
 
   const [kpiData, setKpiData] = useState<FormationKpiData | null>(null);
   const [history, setHistory] = useState<FormationHistoryItem[]>([]);
@@ -205,8 +215,23 @@ export function TeamFormationProvider({ children }: { children: React.ReactNode 
     setIsGenerating(true);
     try {
       const res = await teamFormationService.generateTeamRecommendations(selectedProject, config);
+      if (res.isFeasible === false) {
+        setFeedbackMessage({
+          type: 'error',
+          text: res.feasibilityExplanation || 'Project constraints cannot be met with the current employee pool.'
+        });
+      }
       setCandidates(res.candidates);
       setMetrics(res.metrics);
+      if (res.formationId) {
+        setActiveFormationId(res.formationId);
+      }
+      if (res.formationCode) {
+        setActiveFormationCode(res.formationCode);
+      }
+      if (res.alternatives) {
+        setAlternatives(res.alternatives);
+      }
       setCurrentStep(3);
     } catch (err) {
       console.error('Error generating recommendations:', err);
@@ -217,6 +242,17 @@ export function TeamFormationProvider({ children }: { children: React.ReactNode 
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const applyAlternative = (alternativeId: string) => {
+    const alt = alternatives.find(a => a.alternativeId === alternativeId);
+    if (!alt) return;
+    setCandidates(alt.members);
+    setMetrics(alt.metrics);
+    setFeedbackMessage({
+      type: 'info',
+      text: `Applied alternative strategy: "${alt.strategyLabel}". Roster updated.`
+    });
   };
 
   const replaceCandidate = (oldCandidateId: string, newEmployee: Employee, role?: string) => {
@@ -397,6 +433,7 @@ export function TeamFormationProvider({ children }: { children: React.ReactNode 
     if (!selectedProject || candidates.length === 0) return null;
     try {
       const finalized = await teamFormationService.finalizeFormation({
+        formationId: activeFormationId || undefined,
         projectId: selectedProject.id,
         projectName: selectedProject.name,
         projectDepartment: selectedProject.department,
@@ -433,9 +470,10 @@ export function TeamFormationProvider({ children }: { children: React.ReactNode 
       return finalized;
     } catch (err) {
       console.error('Error finalizing formation:', err);
+      const msg = (err as { message?: string })?.message || 'Failed to finalize formation.';
       setFeedbackMessage({
         type: 'error',
-        text: 'Failed to finalize formation.'
+        text: msg
       });
       return null;
     }
@@ -455,6 +493,9 @@ export function TeamFormationProvider({ children }: { children: React.ReactNode 
     setCurrentStep(1);
     setCandidates([]);
     setMetrics(null);
+    setActiveFormationId(null);
+    setActiveFormationCode(null);
+    setAlternatives([]);
     if (projects.length > 0) {
       selectProject(projects[0]);
     }
@@ -487,6 +528,10 @@ export function TeamFormationProvider({ children }: { children: React.ReactNode 
         openCreateFormationWithOptions,
         isGenerating,
         generateRecommendations,
+        activeFormationId,
+        activeFormationCode,
+        alternatives,
+        applyAlternative,
         candidates,
         metrics,
         replaceCandidate,

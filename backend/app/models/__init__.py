@@ -26,6 +26,7 @@ from app.models.ml_results import (
     MlProjectSuccessPrediction,
 )
 from app.models.report import Report, ScheduledReport
+from app.models.notification import Notification, ScheduledReportExecution
 
 __all__ = [
     "Base",
@@ -54,4 +55,6 @@ __all__ = [
     "MlProjectSuccessPrediction",
     "Report",
     "ScheduledReport",
+    "Notification",
+    "ScheduledReportExecution",
 ]

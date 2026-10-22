@@ -1,12 +1,17 @@
 import type { ReportRecord } from '../types/reports';
 
 /**
- * Sanitizes a field for safe CSV output
+ * Sanitizes a field for safe CSV output and mitigates Spreadsheet Formula Injection (CWE-1236)
  */
 function sanitizeCsvCell(val: string | number | undefined | null): string {
   if (val === undefined || val === null) return '""';
-  const str = String(val).replace(/"/g, '""');
-  return `"${str}"`;
+  let str = String(val);
+  // Mitigate CSV Formula Injection by prepending single quote if starting with formula triggers
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+  const escaped = str.replace(/"/g, '""');
+  return `"${escaped}"`;
 }
 
 /**

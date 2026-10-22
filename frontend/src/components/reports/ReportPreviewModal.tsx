@@ -36,6 +36,7 @@ import {
 } from 'recharts';
 import type { ReportRecord } from '../../types/reports';
 import { exportReportToCsv, triggerReportPrint } from '../../utils/reportExport';
+import { reportService } from '../../services/reportService';
 import { useTheme } from '../../context/ThemeContext';
 
 interface ReportPreviewModalProps {
@@ -56,8 +57,34 @@ export const ReportPreviewModal: React.FC<ReportPreviewModalProps> = ({
   onDuplicate
 }) => {
   const { theme } = useTheme();
+  const [isDownloadingPdf, setIsDownloadingPdf] = React.useState(false);
+  const [isDownloadingCsv, setIsDownloadingCsv] = React.useState(false);
 
   if (!isOpen || !report) return null;
+
+  const handleDownloadPdf = async () => {
+    setIsDownloadingPdf(true);
+    try {
+      await reportService.downloadReportFile(report.id, 'pdf', report.name);
+    } catch (err) {
+      console.warn('Backend vector PDF export unavailable, falling back to print dialog:', err);
+      triggerReportPrint();
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadCsv = async () => {
+    setIsDownloadingCsv(true);
+    try {
+      await reportService.downloadReportFile(report.id, 'csv', report.name);
+    } catch (err) {
+      console.warn('Backend CSV export unavailable, falling back to client-side CSV:', err);
+      exportReportToCsv(report);
+    } finally {
+      setIsDownloadingCsv(false);
+    }
+  };
 
   const chartTheme = {
     textColor: theme === 'dark' ? '#8db3bd' : '#577682',
@@ -224,8 +251,9 @@ export const ReportPreviewModal: React.FC<ReportPreviewModalProps> = ({
           )}
 
           <button
-            onClick={() => exportReportToCsv(report)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold cursor-pointer rounded-xl border shadow-sm transition-all hover:scale-102 hover:border-[var(--color-accent-cyan)]"
+            onClick={handleDownloadCsv}
+            disabled={isDownloadingCsv}
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold cursor-pointer rounded-xl border shadow-sm transition-all hover:scale-102 hover:border-[var(--color-accent-cyan)] disabled:opacity-50"
             style={{
               backgroundColor: 'var(--color-surface-2)',
               borderColor: 'var(--color-border-strong)',
@@ -234,21 +262,22 @@ export const ReportPreviewModal: React.FC<ReportPreviewModalProps> = ({
             title="Download CSV"
           >
             <Download className="w-4 h-4 text-[var(--color-accent-cyan)]" />
-            <span>Export CSV</span>
+            <span>{isDownloadingCsv ? 'Exporting...' : 'Export CSV'}</span>
           </button>
 
           <button
-            onClick={() => triggerReportPrint()}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold cursor-pointer rounded-xl shadow-md transition-all hover:brightness-110 hover:scale-102"
+            onClick={handleDownloadPdf}
+            disabled={isDownloadingPdf}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold cursor-pointer rounded-xl shadow-md transition-all hover:brightness-110 hover:scale-102 disabled:opacity-50"
             style={{
               backgroundColor: 'var(--color-accent-cyan)',
               borderColor: 'var(--color-accent-cyan)',
               color: '#ffffff'
             }}
-            title="Print or Save as PDF"
+            title="Download Vector PDF"
           >
             <Printer className="w-4 h-4 text-white" />
-            <span>Print / PDF</span>
+            <span>{isDownloadingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
           </button>
 
           <button

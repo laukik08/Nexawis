@@ -204,7 +204,7 @@ export function ProjectsTab({ projects }: ProjectsTabProps) {
           </div>
 
           <div className="pt-3 border-t border-[--color-border-subtle] text-xs text-[--color-text-muted]">
-            Demonstration metrics calculated from mock deadline dates and milestones.
+            Operational schedule health calculated from verified start dates, target deadlines, and recorded delivery delays.
           </div>
         </div>
 
@@ -304,7 +304,7 @@ export function ProjectsTab({ projects }: ProjectsTabProps) {
                   </div>
                 </th>
                 <th className="py-3 px-4">Schedule Health</th>
-                <th className="py-3 px-4">Demo Success</th>
+                <th className="py-3 px-4">ML Simulation</th>
                 <th className="py-3 px-4 text-right">Action</th>
               </tr>
             </thead>
@@ -361,7 +361,7 @@ export function ProjectsTab({ projects }: ProjectsTabProps) {
                       <span className="font-mono text-[11px] text-[--color-accent-lime] font-bold">
                         {proj.demoSuccessScore}%
                       </span>
-                      <span className="text-[9px] text-[--color-text-muted] ml-1">(demo)</span>
+                      <span className="text-[9px] text-[--color-text-muted] ml-1">(simulation)</span>
                     </td>
 
                     <td className="py-3 px-4 text-right">

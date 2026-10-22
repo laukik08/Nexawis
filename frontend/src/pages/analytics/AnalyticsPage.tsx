@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { AlertCircle, RotateCw, Sparkles, ShieldCheck } from 'lucide-react';
 import { analyticsService } from '../../services/analyticsService';
 import type { 
   AnalyticsFilters, 
@@ -30,6 +31,7 @@ export function AnalyticsPage() {
   const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<FullAnalyticsPayload | null>(null);
 
   const [filterOptions, setFilterOptions] = useState<{
@@ -60,12 +62,18 @@ export function AnalyticsPage() {
     } else {
       setIsLoading(true);
     }
+    setError(null);
 
     try {
       const payload = await analyticsService.getAnalyticsData(currentFilters);
       setData(payload);
     } catch (err) {
       console.error('Error loading analytics payload:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to connect to the analytics backend. Please verify your connection and permissions.'
+      );
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -126,6 +134,34 @@ export function AnalyticsPage() {
         activeTabName={activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
       />
 
+      {/* Error Alert Recovery */}
+      {!isLoading && error && (
+        <div className="card-base p-6 rounded-2xl border border-red-500/30 bg-red-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-6 h-6 text-red-400 shrink-0" />
+            <div>
+              <h4 className="text-sm font-bold text-red-200">Analytics Data Retrieval Error</h4>
+              <p className="text-xs text-red-300/80 mt-0.5">{error}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => loadData(filters)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/20 hover:bg-red-500/30 text-red-200 border border-red-500/30 transition-colors"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+              <span>Retry</span>
+            </button>
+            <button
+              onClick={handleResetFilters}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[--color-surface-2] hover:bg-[--color-surface-3] text-[--color-text-secondary] border border-[--color-border-subtle] transition-colors"
+            >
+              Reset Filters
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Loading Skeleton */}
       {isLoading ? (
         <div className="space-y-6 animate-pulse">
@@ -170,6 +206,20 @@ export function AnalyticsPage() {
             projectCount={data.projects.totalProjects}
             formationCount={data.teams.totalFormations}
           />
+
+          {/* Transparency & Model Provenance Disclaimer */}
+          <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[--color-surface-2]/60 border border-[--color-border-subtle] text-[11px] text-[--color-text-secondary]">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-3.5 h-3.5 text-[--color-accent-lime]" />
+              <span>
+                <strong>Verified Workspace Telemetry:</strong> Aggregated from active allocations, recorded deadlines, and AWIS evaluations.
+              </span>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-[--color-text-muted] font-mono">
+              <Sparkles className="w-3 h-3 text-[--color-accent-cyan]" />
+              <span>ML Burnout & Success models provide prospective simulation only.</span>
+            </div>
+          </div>
 
           {/* Empty State Guard if Filter Has Zero Matches */}
           {isViewEmpty() ? (

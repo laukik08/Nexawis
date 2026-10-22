@@ -3,6 +3,8 @@ import { ArrowUpRight, Menu, X, Sun, Moon, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+
 
 const navLinks = [
   { 
@@ -40,6 +42,8 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { isSignedIn } = useAuth();
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -118,16 +122,40 @@ export function Navbar() {
 
         {/* Desktop CTA & Theme Toggle */}
         <div className="hidden lg:flex items-center space-x-4 shrink-0">
-          <a href="#" className="text-sm font-bold text-[--color-text-secondary] hover:text-[--color-text-primary] transition-colors px-2" data-cursor="link">
-            Log in
-          </a>
-          
-          <button data-cursor="button" className="btn-accent px-6 py-2.5 rounded-full font-semibold text-sm flex items-center space-x-2 group">
-            <span>Get Started</span>
-            <div className="bg-current/15 rounded-full p-0.5 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5">
-              <ArrowUpRight className="w-3.5 h-3.5 text-current" />
-            </div>
-          </button>
+          {isSignedIn ? (
+            <Link
+              to="/app"
+              data-cursor="button"
+              className="btn-accent px-5 py-2.5 rounded-full font-semibold text-sm flex items-center space-x-2 group shadow-sm"
+            >
+              <span>Dashboard</span>
+              <div className="bg-current/15 rounded-full p-0.5 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5">
+                <ArrowUpRight className="w-3.5 h-3.5 text-current" />
+              </div>
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/sign-in"
+                className="text-sm font-bold text-[--color-text-secondary] hover:text-[--color-text-primary] transition-colors px-2"
+                data-cursor="link"
+              >
+                Log in
+              </Link>
+
+              <Link
+                to="/sign-up"
+                data-cursor="button"
+                className="btn-accent px-6 py-2.5 rounded-full font-semibold text-sm flex items-center space-x-2 group"
+              >
+                <span>Get Started</span>
+                <div className="bg-current/15 rounded-full p-0.5 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5">
+                  <ArrowUpRight className="w-3.5 h-3.5 text-current" />
+                </div>
+              </Link>
+            </>
+          )}
+
 
           <button 
             onClick={toggleTheme}
@@ -230,19 +258,36 @@ export function Navbar() {
             </div>
 
             <div className="flex flex-col gap-4 mt-auto pt-6 border-t border-[--color-border-subtle]">
-              <a href="#" className="text-center font-semibold text-[--color-text-secondary] hover:text-[--color-text-primary] py-2">
-                Log in
-              </a>
-              <motion.button 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="btn-accent w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center space-x-2"
-              >
-                <span>Get Started</span>
-                <ArrowUpRight className="w-5 h-5" />
-              </motion.button>
+              {isSignedIn ? (
+                <Link
+                  to="/app"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="btn-accent w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center space-x-2"
+                >
+                  <span>Go to Dashboard</span>
+                  <ArrowUpRight className="w-5 h-5" />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/sign-in"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-center font-semibold text-[--color-text-secondary] hover:text-[--color-text-primary] py-2"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/sign-up"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="btn-accent w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center space-x-2"
+                  >
+                    <span>Get Started</span>
+                    <ArrowUpRight className="w-5 h-5" />
+                  </Link>
+                </>
+              )}
             </div>
+
           </motion.div>
         )}
       </AnimatePresence>

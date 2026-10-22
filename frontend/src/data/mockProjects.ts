@@ -1,101 +1,19 @@
-export interface ProjectRequirement {
-  skill: string;
-  priority: 'High' | 'Medium' | 'Low';
-  level: string;
-}
+export type {
+  ProjectRequirement,
+  ProjectTeamMember,
+  ProjectMilestone,
+  ProjectRisk,
+  ProjectIntelligence,
+  ProjectAwisFit,
+  ProjectCapacity,
+  Project,
+  CreateProjectInput,
+  ProjectListResponse,
+  ProjectStatsResponse,
+  ProjectFilterParams,
+} from '../types/project';
 
-export interface ProjectTeamMember {
-  id: string;
-  name: string;
-  avatarUrl: string;
-  role: string;
-  primarySkill: string;
-  allocationPercent: number;
-  performanceScore: number;
-  teamFit: number;
-  wellbeingRisk: 'Low' | 'Moderate' | 'High';
-}
-
-export interface ProjectMilestone {
-  id: string;
-  name: string;
-  status: 'Completed' | 'Current' | 'Upcoming';
-  date: string;
-}
-
-export interface ProjectRisk {
-  category: string;
-  level: 'Low' | 'Medium' | 'High';
-  description: string;
-  trend: 'up' | 'down' | 'stable';
-}
-
-export interface ProjectIntelligence {
-  priorityScore: number;
-  complexityScore: number;
-  requirementStability: number;
-  technicalRisk: number;
-  schedulePressure: number;
-  clientEngagement: number;
-  innovationIndex: number;
-  scopeChange: number;
-  budgetVariance: number;
-  deliveryDelayRisk: number;
-  successPrediction: {
-    score: number;
-    trend: 'up' | 'down' | 'stable';
-    positiveFactors: string[];
-    negativeFactors: string[];
-  };
-}
-
-export interface ProjectAwisFit {
-  overallScore: number;
-  skillsMatch: number;
-  availabilityMatch: number;
-  experienceMatch: number;
-  workloadBalance: number;
-  wellbeingImpact: number;
-  insights: string[];
-  explanation: {
-    positives: string[];
-    concerns: string[];
-  };
-}
-
-export interface Project {
-  id: string;
-  projectId: string;
-  name: string;
-  description: string;
-  department: string;
-  client?: string;
-  projectManager?: string;
-  status: 'Planning' | 'Active' | 'On Track' | 'At Risk' | 'Completed';
-  priority: 'Critical' | 'High' | 'Medium' | 'Low';
-  complexity: 'High' | 'Medium' | 'Low';
-  teamSize: number;
-  progress: number;
-  overallRisk: 'Low' | 'Medium' | 'High';
-  teamFit: number;
-  startDate: string;
-  deadline: string;
-  
-  intelligence: ProjectIntelligence;
-  requirements: ProjectRequirement[];
-  currentTeam: ProjectTeamMember[];
-  milestones: ProjectMilestone[];
-  risks: ProjectRisk[];
-  awisFit: ProjectAwisFit;
-  
-  capacity: {
-    totalRequired: number;
-    allocated: number;
-    available: number;
-    overloadedMembers: number;
-    balancedMembers: number;
-  };
-}
+import type { Project } from '../types/project';
 
 export const mockProjects: Project[] = [
   {

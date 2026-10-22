@@ -175,144 +175,163 @@ export function StepSelectProject() {
         </div>
       </div>
 
-      {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredProjects.map((project) => {
-          const isSelected = selectedProject?.id === project.id;
+      {/* Projects Grid or Empty State */}
+      {filteredProjects.length === 0 ? (
+        <div 
+          className="card-base p-12 rounded-2xl text-center space-y-3"
+          style={{ borderColor: 'var(--color-border-subtle)' }}
+        >
+          <div className="w-12 h-12 rounded-full bg-[--color-surface-2] flex items-center justify-center mx-auto text-[--color-text-muted]">
+            <Search className="w-6 h-6" />
+          </div>
+          <h4 className="text-base font-bold" style={{ color: 'var(--color-text-primary)' }}>
+            No Target Projects Found
+          </h4>
+          <p className="text-xs max-w-md mx-auto" style={{ color: 'var(--color-text-secondary)' }}>
+            {projects.length === 0 
+              ? 'No projects were retrieved for the active workspace. Ensure projects exist in your database or active workspace.'
+              : 'No projects match your current search and filter criteria. Try adjusting the filter criteria above.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredProjects.map((project) => {
+            const isSelected = selectedProject?.id === project.id;
 
-          return (
-            <div
-              key={project.id}
-              onClick={() => selectProject(project)}
-              className="card-base p-5 rounded-2xl cursor-pointer transition-all relative flex flex-col justify-between hover:translate-y-[-2px]"
-              style={{
-                border: isSelected 
-                  ? '2px solid var(--color-accent-cyan)' 
-                  : '1px solid var(--color-border-subtle)',
-                boxShadow: isSelected 
-                  ? '0 6px 24px rgba(2, 132, 199, 0.18)' 
-                  : 'none'
-              }}
-            >
-              {/* Top Tag & Selection Indicator */}
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div>
-                    <span 
-                      className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded"
-                      style={{ 
-                        backgroundColor: 'var(--color-surface-2)',
-                        color: 'var(--color-text-muted)'
-                      }}
-                    >
-                      {project.projectId}
-                    </span>
-                    <h4 
-                      className="text-base font-bold font-display mt-1.5 leading-snug line-clamp-1"
-                      style={{ color: 'var(--color-text-primary)' }}
-                    >
-                      {project.name}
-                    </h4>
-                    <p 
-                      className="text-[11px] font-medium"
-                      style={{ color: 'var(--color-text-muted)' }}
-                    >
-                      {project.department}
-                    </p>
-                  </div>
-
-                  {/* Selection Check Badge */}
-                  <div 
-                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform"
-                    style={
-                      isSelected
-                        ? {
-                            backgroundColor: 'var(--color-accent-cyan)',
-                            color: 'var(--color-text-inverse)',
-                            boxShadow: '0 0 12px rgba(2, 132, 199, 0.4)'
-                          }
-                        : {
-                            backgroundColor: 'var(--color-surface-2)',
-                            border: '1px solid var(--color-border-strong)',
-                            color: 'transparent'
-                          }
-                    }
-                  >
-                    <Check className="w-4 h-4 stroke-[3]" />
-                  </div>
-                </div>
-
-                <p 
-                  className="text-xs line-clamp-2 mb-4 leading-relaxed"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                >
-                  {project.description}
-                </p>
-
-                {/* Requirements Skills Pills */}
-                <div className="space-y-1.5 mb-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[--color-text-muted]">
-                    Required Stack ({project.requirements.length})
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {project.requirements.slice(0, 4).map((req, i) => (
-                      <span
-                        key={i}
-                        className="text-[10px] font-medium px-2 py-0.5 rounded"
-                        style={{
-                          backgroundColor: 'var(--color-surface-2)',
-                          border: '1px solid var(--color-border-subtle)',
-                          color: 'var(--color-text-primary)'
-                        }}
-                      >
-                        {req.skill}
-                      </span>
-                    ))}
-                    {project.requirements.length > 4 && (
+            return (
+              <div
+                key={project.id}
+                onClick={() => selectProject(project)}
+                className="card-base p-5 rounded-2xl cursor-pointer transition-all relative flex flex-col justify-between hover:translate-y-[-2px]"
+                style={{
+                  border: isSelected 
+                    ? '2px solid var(--color-accent-cyan)' 
+                    : '1px solid var(--color-border-subtle)',
+                  boxShadow: isSelected 
+                    ? '0 6px 24px rgba(2, 132, 199, 0.18)' 
+                    : 'none'
+                }}
+              >
+                {/* Top Tag & Selection Indicator */}
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div>
                       <span 
-                        className="text-[10px] font-medium px-2 py-0.5 rounded"
+                        className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded"
                         style={{ 
                           backgroundColor: 'var(--color-surface-2)',
                           color: 'var(--color-text-muted)'
                         }}
                       >
-                        +{project.requirements.length - 4} more
+                        {project.projectId}
                       </span>
-                    )}
+                      <h4 
+                        className="text-base font-bold font-display mt-1.5 leading-snug line-clamp-1"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
+                        {project.name}
+                      </h4>
+                      <p 
+                        className="text-[11px] font-medium"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        {project.department}
+                      </p>
+                    </div>
+
+                    {/* Selection Check Badge */}
+                    <div 
+                      className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform"
+                      style={
+                        isSelected
+                          ? {
+                              backgroundColor: 'var(--color-accent-cyan)',
+                              color: 'var(--color-text-inverse)',
+                              boxShadow: '0 0 12px rgba(2, 132, 199, 0.4)'
+                            }
+                          : {
+                              backgroundColor: 'var(--color-surface-2)',
+                              border: '1px solid var(--color-border-strong)',
+                              color: 'transparent'
+                            }
+                      }
+                    >
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </div>
+                  </div>
+
+                  <p 
+                    className="text-xs line-clamp-2 mb-4 leading-relaxed"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {project.description}
+                  </p>
+
+                  {/* Requirements Skills Pills */}
+                  <div className="space-y-1.5 mb-4">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[--color-text-muted]">
+                      Required Stack ({project.requirements.length})
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {project.requirements.slice(0, 4).map((req, i) => (
+                        <span
+                          key={i}
+                          className="text-[10px] font-medium px-2 py-0.5 rounded"
+                          style={{
+                            backgroundColor: 'var(--color-surface-2)',
+                            border: '1px solid var(--color-border-subtle)',
+                            color: 'var(--color-text-primary)'
+                          }}
+                        >
+                          {req.skill}
+                        </span>
+                      ))}
+                      {project.requirements.length > 4 && (
+                        <span 
+                          className="text-[10px] font-medium px-2 py-0.5 rounded"
+                          style={{ 
+                            backgroundColor: 'var(--color-surface-2)',
+                            color: 'var(--color-text-muted)'
+                          }}
+                        >
+                          +{project.requirements.length - 4} more
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Bottom Meta & Badges */}
-              <div 
-                className="pt-3 border-t flex items-center justify-between text-xs"
-                style={{ borderColor: 'var(--color-border-subtle)' }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${getPriorityStyle(project.priority)}`}>
-                    {project.priority}
-                  </span>
+                {/* Bottom Meta & Badges */}
+                <div 
+                  className="pt-3 border-t flex items-center justify-between text-xs"
+                  style={{ borderColor: 'var(--color-border-subtle)' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${getPriorityStyle(project.priority)}`}>
+                      {project.priority}
+                    </span>
+                    <div 
+                      className="flex items-center gap-1 text-[11px]"
+                      style={{ color: 'var(--color-text-muted)' }}
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>{project.teamSize} target</span>
+                    </div>
+                  </div>
+
                   <div 
                     className="flex items-center gap-1 text-[11px]"
                     style={{ color: 'var(--color-text-muted)' }}
                   >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>{project.teamSize} target</span>
+                    <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--color-accent-cyan)' }} />
+                    <span>{new Date(project.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                   </div>
                 </div>
-
-                <div 
-                  className="flex items-center gap-1 text-[11px]"
-                  style={{ color: 'var(--color-text-muted)' }}
-                >
-                  <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--color-accent-cyan)' }} />
-                  <span>{new Date(project.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Selected Project Full Details Summary & CTA */}
       {selectedProject && (

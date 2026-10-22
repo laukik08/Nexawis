@@ -8,10 +8,18 @@ import {
   Info 
 } from 'lucide-react';
 import type { AnalyticsKpiSummary, KpiMetric } from '../../types/analytics';
+import { isDemoModeActive } from '../../services/analyticsService';
 
 interface AnalyticsKpiCardsProps {
   kpis: AnalyticsKpiSummary;
 }
+
+const parseNumericValue = (val: unknown): number => {
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  if (!val || val === 'N/A') return 0;
+  const parsed = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+  return isNaN(parsed) ? 0 : parsed;
+};
 
 export function AnalyticsKpiCards({ kpis }: AnalyticsKpiCardsProps) {
   const cards: Array<{
@@ -26,28 +34,28 @@ export function AnalyticsKpiCards({ kpis }: AnalyticsKpiCardsProps) {
       icon: BrainCircuit,
       accentColor: 'var(--color-accent-cyan)',
       bgGlow: 'rgba(2, 132, 199, 0.12)',
-      progressPercent: typeof kpis.averageAwisScore.value === 'number' ? kpis.averageAwisScore.value : 88.4
+      progressPercent: parseNumericValue(kpis.averageAwisScore.value)
     },
     {
       metric: kpis.workforceUtilization,
       icon: Cpu,
       accentColor: '#f59e0b',
       bgGlow: 'rgba(245, 158, 11, 0.12)',
-      progressPercent: typeof kpis.workforceUtilization.value === 'number' ? kpis.workforceUtilization.value : 76
+      progressPercent: parseNumericValue(kpis.workforceUtilization.value)
     },
     {
       metric: kpis.averageTeamFit,
       icon: Users2,
       accentColor: 'var(--color-accent-lime)',
       bgGlow: 'rgba(22, 163, 74, 0.12)',
-      progressPercent: typeof kpis.averageTeamFit.value === 'number' ? kpis.averageTeamFit.value : 91.8
+      progressPercent: parseNumericValue(kpis.averageTeamFit.value)
     },
     {
       metric: kpis.workforceSustainability,
       icon: ShieldCheck,
       accentColor: '#a855f7',
       bgGlow: 'rgba(168, 85, 247, 0.12)',
-      progressPercent: typeof kpis.workforceSustainability.value === 'number' ? kpis.workforceSustainability.value : 94.6
+      progressPercent: parseNumericValue(kpis.workforceSustainability.value)
     }
   ];
 
@@ -156,13 +164,17 @@ export function AnalyticsKpiCards({ kpis }: AnalyticsKpiCardsProps) {
         })}
       </div>
 
-      {/* Subtle Demo Data Note */}
+      {/* Telemetry provenance footer */}
       <div className="flex items-center justify-end px-1">
         <span 
           className="text-[10px] font-mono text-[--color-text-muted] flex items-center gap-1 opacity-75"
         >
           <Info className="w-3 h-3" />
-          <span>Demo Data • Illustrative values calculated from mock dataset until backend integration</span>
+          <span>
+            {isDemoModeActive()
+              ? 'Demo Mode • Illustrative values calculated from mock dataset'
+              : 'Live Telemetry • Direct database aggregation across active workspace records'}
+          </span>
         </span>
       </div>
     </div>
