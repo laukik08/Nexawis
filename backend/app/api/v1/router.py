@@ -14,6 +14,7 @@ from app.api.v1.endpoints import (
     team_formation,
     analytics,
     reports,
+    demo,
 )
 
 api_v1_router = APIRouter()
@@ -88,5 +89,13 @@ api_v1_router.include_router(
     tags=["Team Optimization Engine (Aliases)"],
     include_in_schema=False,
 )
+
+# Mount dedicated Demo Workspace management endpoints
+api_v1_router.include_router(
+    demo.router,
+    prefix="/demo",
+    tags=["Demo Workspace Management"],
+)
+
 
 

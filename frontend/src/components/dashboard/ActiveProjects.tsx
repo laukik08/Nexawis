@@ -1,14 +1,71 @@
 import { dashboardData } from '../../data/mockDashboard';
 import { MoreHorizontal } from 'lucide-react';
 import clsx from 'clsx';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { projectService } from '../../services/projectService';
+import { useAuth } from '../../context/AuthContext';
+
+interface ActiveProjectItem {
+  id: string;
+  name: string;
+  priority: string;
+  teamSize: number;
+  progress: number;
+  teamFit: number;
+  status: string;
+}
 
 export function ActiveProjects() {
+  const { activeWorkspaceId } = useAuth();
+  const navigate = useNavigate();
+  const [projects, setProjects] = useState<ActiveProjectItem[]>(dashboardData.activeProjects);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRealProjects() {
+      try {
+        const res = await projectService.getProjects({ page: 1, pageSize: 6 });
+        if (!mounted) return;
+        if (res.items && res.items.length > 0) {
+          const mapped: ActiveProjectItem[] = res.items.map((p) => ({
+            id: p.id,
+            name: p.name,
+            priority: p.priority,
+            teamSize: p.teamSize ?? 3,
+            progress: Math.round(p.progress ?? 0),
+            teamFit: Math.round(p.teamFit ?? 92),
+            status: p.status,
+          }));
+          setProjects(mapped);
+        }
+      } catch {
+        // Fallback to mock dashboard projects
+      }
+    }
+
+    loadRealProjects();
+    return () => {
+      mounted = false;
+    };
+  }, [activeWorkspaceId]);
+
   const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'On Track': return 'text-[--color-accent-lime] bg-[--color-accent-lime]/10 border-[--color-accent-lime]/20';
-      case 'In Progress': return 'text-[--color-accent-cyan] bg-[--color-accent-cyan]/10 border-[--color-accent-cyan]/20';
-      case 'At Risk': return 'text-red-400 bg-red-400/10 border-red-400/20';
-      default: return 'text-[--color-text-secondary] bg-[--color-surface-2] border-[--color-border-strong]';
+    switch (status) {
+      case 'On Track':
+        return 'text-[--color-accent-lime] bg-[--color-accent-lime]/10 border-[--color-accent-lime]/20';
+      case 'In Progress':
+      case 'Active':
+        return 'text-[--color-accent-cyan] bg-[--color-accent-cyan]/10 border-[--color-accent-cyan]/20';
+      case 'At Risk':
+        return 'text-red-400 bg-red-400/10 border-red-400/20';
+      case 'Planning':
+        return 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+      case 'Completed':
+        return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+      default:
+        return 'text-[--color-text-secondary] bg-[--color-surface-2] border-[--color-border-strong]';
     }
   };
 
@@ -16,7 +73,10 @@ export function ActiveProjects() {
     <section className="mb-8 relative z-10">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-[--color-text-primary] tracking-tight">Active Projects</h2>
-        <button className="text-sm font-bold text-[--color-text-secondary] hover:text-[--color-text-primary] transition-colors">
+        <button 
+          onClick={() => navigate('/app/projects')}
+          className="text-sm font-bold text-[--color-text-secondary] hover:text-[--color-text-primary] transition-colors cursor-pointer"
+        >
           View All
         </button>
       </div>
@@ -36,7 +96,7 @@ export function ActiveProjects() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[--color-border-subtle]">
-            {dashboardData.activeProjects.map((project) => (
+            {projects.map((project) => (
               <tr key={project.id} className="hover:bg-[--color-surface-2]/30 transition-colors group">
                 <td className="py-4 px-6 font-bold text-[--color-text-primary]">{project.name}</td>
                 <td className="py-4 px-6">
@@ -81,7 +141,7 @@ export function ActiveProjects() {
 
       {/* Mobile Cards */}
       <div className="md:hidden space-y-4">
-        {dashboardData.activeProjects.map((project) => (
+        {projects.map((project) => (
           <div key={project.id} className="card-base p-5 space-y-4">
             <div className="flex justify-between items-start">
               <h3 className="font-bold text-[--color-text-primary]">{project.name}</h3>

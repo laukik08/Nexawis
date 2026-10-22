@@ -130,6 +130,7 @@ class EmployeeCreateRequest(BaseModel):
     growth_potential: Optional[float] = Field(default=70.0, ge=0.0, le=100.0, alias="growthPotential")
     collaboration_score: Optional[float] = Field(default=80.0, ge=0.0, le=100.0, alias="awisFitScore")
     wellbeing_risk: Optional[str] = Field(default="Low", alias="wellbeingRisk")
+    mental_fatigue_score: Optional[float] = Field(default=2.5, ge=0.0, le=10.0, alias="mentalFatigueScore")
 
 
 class EmployeeUpdateRequest(BaseModel):

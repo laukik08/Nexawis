@@ -85,6 +85,7 @@ ROLE_PERMISSIONS: dict[SystemRole, Set[Permission]] = {
     SystemRole.PROJECT_MANAGER: {
         Permission.USERS_VIEW,
         Permission.EMPLOYEES_VIEW,
+        Permission.EMPLOYEES_MANAGE,
         Permission.PROJECTS_VIEW,
         Permission.PROJECTS_MANAGE,
         Permission.TEAM_FORMATIONS_VIEW,
@@ -113,7 +114,20 @@ def has_permission(role: Union[SystemRole, str], permission: Permission) -> bool
     """Evaluates whether a given system role possesses a specified permission."""
     try:
         if isinstance(role, str):
-            role = SystemRole(role)
+            try:
+                role = SystemRole(role)
+            except ValueError:
+                norm = role.strip().lower().replace("_", " ")
+                matched = None
+                for sr in SystemRole:
+                    if sr.value.lower() == norm:
+                        matched = sr
+                        break
+                if matched:
+                    role = matched
+                else:
+                    return False
         return permission in ROLE_PERMISSIONS.get(role, set())
     except ValueError:
         return False
+

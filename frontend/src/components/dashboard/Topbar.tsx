@@ -1,6 +1,22 @@
-import { Menu, Search, Bell, Sun, Moon, LogOut, User as UserIcon, ChevronDown, Settings } from 'lucide-react';
+import { 
+  Menu, 
+  Search, 
+  Bell, 
+  Sun, 
+  Moon, 
+  LogOut, 
+  User as UserIcon, 
+  ChevronDown, 
+  Settings, 
+  Building2, 
+  Sparkles, 
+  RotateCcw, 
+  Check, 
+  Loader2 
+} from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { demoService } from '../../services/demoService';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -9,12 +25,22 @@ interface TopbarProps {
   onMenuClick: () => void;
 }
 
+const DEMO_WORKSPACE_ID = 'd0000000-0000-0000-0000-000000000001';
+
 export function Topbar({ onMenuClick }: TopbarProps) {
   const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, workspaces, activeWorkspaceId, switchWorkspace } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const wsDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const activeWs = workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
+  const isDemo = activeWorkspaceId === DEMO_WORKSPACE_ID || activeWs?.id === DEMO_WORKSPACE_ID;
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -22,9 +48,12 @@ export function Topbar({ onMenuClick }: TopbarProps) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setProfileOpen(false);
       }
+      if (wsDropdownRef.current && !wsDropdownRef.current.contains(event.target as Node)) {
+        setWorkspaceOpen(false);
+      }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -32,19 +61,144 @@ export function Topbar({ onMenuClick }: TopbarProps) {
     navigate('/');
   };
 
+  const handleResetDemo = async () => {
+    try {
+      setIsResetting(true);
+      setResetMessage(null);
+      await demoService.resetWorkspace();
+      setResetMessage('Demo data reset successfully!');
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    } catch {
+      setResetMessage('Failed to reset demo.');
+      setIsResetting(false);
+    }
+  };
+
   return (
     <header className="h-20 bg-[--color-bg-base]/80 backdrop-blur-xl border-b border-[--color-border-subtle] flex items-center justify-between px-6 sticky top-0 z-30">
       
-      {/* Left: Mobile Menu & Contextual Title (if needed) */}
-      <div className="flex items-center space-x-4">
+      {/* Left: Mobile Menu & Workspace Selector */}
+      <div className="flex items-center space-x-3 sm:space-x-4">
         <button 
           onClick={onMenuClick}
           className="lg:hidden p-2 -ml-2 text-[--color-text-secondary] hover:text-[--color-text-primary] rounded-xl hover:bg-[--color-surface-2] transition-colors"
         >
           <Menu className="w-5 h-5" />
         </button>
-        {/* Placeholder for page title context, can be passed via props later */}
-        {/* <h1 className="text-xl font-bold text-[--color-text-primary] hidden sm:block">Dashboard</h1> */}
+
+        {/* Workspace Selector Dropdown */}
+        <div className="relative" ref={wsDropdownRef}>
+          <button
+            onClick={() => setWorkspaceOpen(!workspaceOpen)}
+            className="flex items-center space-x-2.5 px-3 py-1.5 rounded-xl border border-[--color-border-strong] bg-[--color-surface-1] hover:bg-[--color-surface-2] transition-all duration-200 group text-left cursor-pointer shadow-sm"
+            title="Switch Workspace"
+          >
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+              isDemo ? 'bg-[--color-accent-cyan]/15 text-[--color-accent-cyan]' : 'bg-[--color-surface-3] text-[--color-text-secondary]'
+            }`}>
+              {isDemo ? <Sparkles className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+            </div>
+
+            <div className="flex flex-col">
+              <div className="flex items-center space-x-2">
+                <span className="font-semibold text-xs sm:text-sm text-[--color-text-primary] max-w-[140px] sm:max-w-[200px] truncate">
+                  {activeWs?.name || 'NEXAWIS Enterprise Demo'}
+                </span>
+                {isDemo && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[--color-accent-cyan]/15 text-[--color-accent-cyan] border border-[--color-accent-cyan]/30 uppercase tracking-wider">
+                    Demo
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] text-[--color-text-muted] capitalize">
+                {activeWs?.role || 'Admin'} Workspace
+              </span>
+            </div>
+
+            <ChevronDown className={`w-4 h-4 text-[--color-text-muted] transition-transform duration-200 ${workspaceOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Workspace Dropdown Panel */}
+          <AnimatePresence>
+            {workspaceOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                transition={{ duration: 0.15 }}
+                className="absolute left-0 mt-2 w-72 rounded-2xl bg-[--color-surface-1] border border-[--color-border-strong] shadow-2xl py-2 z-50 overflow-hidden"
+              >
+                <div className="px-4 py-2 border-b border-[--color-border-subtle]">
+                  <p className="text-xs font-bold text-[--color-text-primary] uppercase tracking-wider">Workspaces</p>
+                  <p className="text-[11px] text-[--color-text-muted]">Select an isolated tenant partition</p>
+                </div>
+
+                <div className="py-1 max-h-56 overflow-y-auto">
+                  {workspaces.map((ws) => {
+                    const isCurrent = (activeWorkspaceId === ws.id) || (!activeWorkspaceId && ws.id === DEMO_WORKSPACE_ID);
+                    const isWsDemo = ws.id === DEMO_WORKSPACE_ID;
+                    return (
+                      <button
+                        key={ws.id}
+                        onClick={async () => {
+                          setWorkspaceOpen(false);
+                          if (!isCurrent) {
+                            await switchWorkspace(ws.id);
+                            window.location.reload();
+                          }
+                        }}
+                        className={`w-full text-left px-4 py-2.5 flex items-center justify-between hover:bg-[--color-surface-2] transition-colors ${
+                          isCurrent ? 'bg-[--color-surface-2]/60' : ''
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2.5 overflow-hidden">
+                          <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${
+                            isWsDemo ? 'bg-[--color-accent-cyan]/15 text-[--color-accent-cyan]' : 'bg-[--color-surface-3] text-[--color-text-muted]'
+                          }`}>
+                            {isWsDemo ? <Sparkles className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}
+                          </div>
+                          <div className="truncate">
+                            <p className="text-xs font-semibold text-[--color-text-primary] truncate">{ws.name}</p>
+                            <p className="text-[10px] text-[--color-text-muted] capitalize">{ws.role} Role</p>
+                          </div>
+                        </div>
+                        {isCurrent && <Check className="w-4 h-4 text-[--color-accent-cyan] shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Reset Demo Action */}
+                {isDemo && (
+                  <div className="p-3 border-t border-[--color-border-subtle] bg-[--color-surface-2]/30">
+                    <button
+                      onClick={handleResetDemo}
+                      disabled={isResetting}
+                      className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold bg-[--color-surface-2] hover:bg-[--color-surface-3] border border-[--color-border-strong] text-[--color-text-primary] transition-all disabled:opacity-50"
+                    >
+                      {isResetting ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[--color-accent-cyan]" />
+                          <span>Resetting Demo...</span>
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="w-3.5 h-3.5 text-[--color-accent-cyan]" />
+                          <span>Reset Demo Environment</span>
+                        </>
+                      )}
+                    </button>
+                    {resetMessage && (
+                      <p className="text-[10px] text-center text-[--color-accent-cyan] mt-1.5 font-medium">{resetMessage}</p>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Right: Actions */}

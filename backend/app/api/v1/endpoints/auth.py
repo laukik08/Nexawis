@@ -20,6 +20,7 @@ from app.api.deps import (
     require_system_roles,
     require_workspace_roles,
     WorkspaceContext,
+    DEMO_WORKSPACE_ID,
 )
 from app.models import User, Workspace, WorkspaceMember, WorkspaceSettings
 from app.schemas.auth import (
@@ -31,6 +32,33 @@ from app.schemas.auth import (
 )
 
 router = APIRouter()
+
+
+async def _ensure_demo_membership(db: AsyncSession, user_id: uuid.UUID) -> None:
+    """Ensures user has active membership in the enterprise demo workspace."""
+    try:
+        demo_ws = (await db.execute(select(Workspace).where(Workspace.id == DEMO_WORKSPACE_ID))).scalar_one_or_none()
+        if demo_ws:
+            mem = (await db.execute(
+                select(WorkspaceMember).where(
+                    WorkspaceMember.workspace_id == DEMO_WORKSPACE_ID,
+                    WorkspaceMember.user_id == user_id,
+                )
+            )).scalar_one_or_none()
+            if not mem:
+                mem = WorkspaceMember(
+                    workspace_id=DEMO_WORKSPACE_ID,
+                    user_id=user_id,
+                    role=WorkspaceRole.ADMIN.value,
+                    is_active=True,
+                )
+                db.add(mem)
+                await db.commit()
+            elif not mem.is_active:
+                mem.is_active = True
+                await db.commit()
+    except Exception:
+        await db.rollback()
 
 
 @router.get(
@@ -47,6 +75,7 @@ async def get_my_profile(
     Never trusts client identity claims; derived from verified bearer token.
     """
     user = context.user
+    await _ensure_demo_membership(db, user.id)
 
     # Fetch all workspaces the user has active membership in
     query = (
@@ -59,6 +88,7 @@ async def get_my_profile(
         .order_by(Workspace.name.asc())
     )
     res = await db.execute(query)
+
     workspaces_data = []
     for member, ws in res.all():
         workspaces_data.append(
@@ -127,6 +157,7 @@ async def list_my_workspaces(
     db: AsyncSession = Depends(get_db_session),
 ) -> List[WorkspaceBriefResponse]:
     """Retrieves all workspaces where the user has active membership."""
+    await _ensure_demo_membership(db, current_user.id)
     query = (
         select(WorkspaceMember, Workspace)
         .join(Workspace, WorkspaceMember.workspace_id == Workspace.id)
@@ -134,6 +165,7 @@ async def list_my_workspaces(
             WorkspaceMember.user_id == current_user.id,
             WorkspaceMember.is_active == True,  # noqa: E712
         )
+
         .order_by(Workspace.name.asc())
     )
     res = await db.execute(query)

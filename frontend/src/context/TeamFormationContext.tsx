@@ -126,9 +126,14 @@ export function TeamFormationProvider({ children }: { children: React.ReactNode 
   const formationOptions = mockFormationOptions;
   const activeFormationOption = formationOptions.find(o => o.id === config.formationOption) || formationOptions[0];
 
-  const selectFormationOption = (optionId: FormationOptionId) => {
+  const selectFormationOption = async (optionId: FormationOptionId) => {
     const selected = formationOptions.find(o => o.id === optionId);
     if (selected) {
+      const nextConfig: TeamFormationConfig = {
+        ...config,
+        formationOption: optionId,
+        ...selected.configPreset
+      };
       updateConfig({
         formationOption: optionId,
         ...selected.configPreset
@@ -139,8 +144,44 @@ export function TeamFormationProvider({ children }: { children: React.ReactNode 
         type: 'info',
         text: `Formation strategy changed to "${selected.title}". Presets applied.`
       });
+
+      // Advance from Step 1 to Step 2 if project is available
+      if (currentStep === 1) {
+        if (!selectedProject && projects.length > 0) {
+          selectProject(projects[0]);
+        }
+        setCurrentStep(2);
+      } else if (currentStep >= 3 && selectedProject) {
+        // Automatically re-generate recommendations for newly selected strategy preset
+        setIsGenerating(true);
+        try {
+          const res = await teamFormationService.generateTeamRecommendations(selectedProject, nextConfig);
+          if (res.isFeasible === false) {
+            setFeedbackMessage({
+              type: 'error',
+              text: res.feasibilityExplanation || 'Project constraints cannot be met with the current employee pool.'
+            });
+          }
+          setCandidates(res.candidates);
+          setMetrics(res.metrics);
+          if (res.formationId) {
+            setActiveFormationId(res.formationId);
+          }
+          if (res.formationCode) {
+            setActiveFormationCode(res.formationCode);
+          }
+          if (res.alternatives) {
+            setAlternatives(res.alternatives);
+          }
+        } catch (err) {
+          console.error('Error updating recommendations for preset:', err);
+        } finally {
+          setIsGenerating(false);
+        }
+      }
     }
   };
+
 
   const openCreateFormationWithOptions = () => {
     setActiveTab('create');

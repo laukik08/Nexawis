@@ -35,6 +35,8 @@ from app.models import (
 # Standard HTTP Bearer scheme
 bearer_scheme = HTTPBearer(auto_error=False)
 
+DEMO_WORKSPACE_ID = uuid.UUID("d0000000-0000-0000-0000-000000000001")
+
 
 @dataclass
 class WorkspaceContext:
@@ -153,10 +155,23 @@ async def get_or_create_user_profile(
             is_active=True,
         )
         db.add(membership)
+
+        # Also enroll user into demo workspace if available
+        demo_ws = (await db.execute(select(Workspace).where(Workspace.id == DEMO_WORKSPACE_ID))).scalar_one_or_none()
+        if demo_ws:
+            demo_membership = WorkspaceMember(
+                workspace_id=DEMO_WORKSPACE_ID,
+                user_id=user.id,
+                role=WorkspaceRole.ADMIN.value,
+                is_active=True,
+            )
+            db.add(demo_membership)
+
         await db.commit()
         await db.refresh(user)
         logger.info(f"Successfully provisioned new user profile: {user.id} ({clerk_user_id})")
         return user
+
 
     except IntegrityError:
         # Concurrent creation race condition: rollback and fetch existing record
@@ -212,28 +227,61 @@ async def get_current_workspace_context(
     3. Rejects unauthorized access across tenant boundaries with HTTP 403.
     """
     target_ws_id: Optional[uuid.UUID] = None
+    target_ws_slug: Optional[str] = None
     if x_workspace_id:
+        val = x_workspace_id.strip()
         try:
-            target_ws_id = uuid.UUID(x_workspace_id.strip())
+            target_ws_id = uuid.UUID(val)
         except ValueError:
-            raise WorkspaceAccessDeniedError("Invalid X-Workspace-Id header format. Must be a valid UUID.")
+            target_ws_slug = val
 
-    if target_ws_id:
-        # Explicit workspace requested: verify active membership
+    if target_ws_id or target_ws_slug:
+        # Explicit workspace requested: verify active membership by ID or slug
+        ws_cond = Workspace.id == target_ws_id if target_ws_id else Workspace.slug == target_ws_slug
         query = (
             select(WorkspaceMember, Workspace)
             .join(Workspace, WorkspaceMember.workspace_id == Workspace.id)
             .where(
-                WorkspaceMember.workspace_id == target_ws_id,
+                ws_cond,
                 WorkspaceMember.user_id == current_user.id,
                 WorkspaceMember.is_active == True,  # noqa: E712
             )
         )
         res = await db.execute(query)
         row = res.first()
+
+        is_demo_target = (
+            (target_ws_id and target_ws_id == DEMO_WORKSPACE_ID)
+            or (target_ws_slug and target_ws_slug.lower() in ("nexawis-demo", "demo"))
+        )
+        if not row and is_demo_target:
+            # Auto-enroll into demo workspace
+            ws = (await db.execute(select(Workspace).where(Workspace.id == DEMO_WORKSPACE_ID))).scalar_one_or_none()
+            if ws:
+                existing_mem = (await db.execute(
+                    select(WorkspaceMember).where(
+                        WorkspaceMember.workspace_id == ws.id,
+                        WorkspaceMember.user_id == current_user.id,
+                    )
+                )).scalar_one_or_none()
+                if existing_mem:
+                    existing_mem.is_active = True
+                    membership = existing_mem
+                else:
+                    membership = WorkspaceMember(
+                        workspace_id=ws.id,
+                        user_id=current_user.id,
+                        role="admin",
+                        is_active=True,
+                    )
+                    db.add(membership)
+                await db.commit()
+                row = (membership, ws)
+
         if not row:
+            display_id = target_ws_id or target_ws_slug
             raise WorkspaceAccessDeniedError(
-                f"You do not have active membership in workspace '{target_ws_id}'."
+                f"You do not have active membership in workspace '{display_id}'."
             )
         membership, workspace = row
         return WorkspaceContext(
@@ -245,6 +293,8 @@ async def get_current_workspace_context(
         )
 
     # No specific workspace specified: resolve user's primary active workspace
+    # Prioritize DEMO_WORKSPACE_ID if user is a member so demo experience is immediate
+    from sqlalchemy import case
     query = (
         select(WorkspaceMember, Workspace)
         .join(Workspace, WorkspaceMember.workspace_id == Workspace.id)
@@ -252,7 +302,10 @@ async def get_current_workspace_context(
             WorkspaceMember.user_id == current_user.id,
             WorkspaceMember.is_active == True,  # noqa: E712
         )
-        .order_by(WorkspaceMember.created_at.asc())
+        .order_by(
+            case((Workspace.id == DEMO_WORKSPACE_ID, 0), else_=1),
+            WorkspaceMember.created_at.asc(),
+        )
         .limit(1)
     )
     res = await db.execute(query)
@@ -333,6 +386,8 @@ def require_permissions(*required_permissions: Permission):
         return user
 
     return _permission_guard
+
+
 
 
 def require_workspace_roles(*allowed_workspace_roles: Union[WorkspaceRole, str]):

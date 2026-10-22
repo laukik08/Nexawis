@@ -445,9 +445,11 @@ async def create_employee(
         growth_potential=payload.growth_potential or 70.0,
         collaboration_score=payload.collaboration_score or 80.0,
         wellbeing_risk=payload.wellbeing_risk or "Low",
+        mental_fatigue_score=payload.mental_fatigue_score if payload.mental_fatigue_score is not None else 2.5,
     )
     db.add(employee)
     await db.flush()
+
 
     # 4. Process Skills
     if payload.skills:

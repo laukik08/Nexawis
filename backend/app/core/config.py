@@ -96,6 +96,7 @@ class Settings(BaseSettings):
     CLERK_JWKS_URL: Optional[str] = None
     CLERK_PEM_PUBLIC_KEY: Optional[str] = None
     CLERK_AUDIENCE: Optional[str] = None
+    CLERK_AUTHORIZED_PARTIES: Optional[List[str]] = None
     CLERK_JWT_ALGORITHMS: List[str] = ["RS256"]
 
     # Notification & Scheduled Report Delivery (Phase 11)

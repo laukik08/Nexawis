@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTeamFormation } from '../../context/TeamFormationContext';
 import { 
   Sparkles, 
@@ -9,9 +9,9 @@ import {
   Sliders, 
   Check, 
   X, 
-  ArrowRight,
-  ShieldCheck,
-  CheckCircle2
+  ArrowRight, 
+  ShieldCheck, 
+  CheckCircle2 
 } from 'lucide-react';
 import type { FormationOptionId } from '../../types/teamFormation';
 
@@ -26,7 +26,14 @@ export function CreateFormationOptionsModal() {
 
   const [selectedId, setSelectedId] = useState<FormationOptionId>(config.formationOption || 'autonomous_ai');
 
+  useEffect(() => {
+    if (isOptionsModalOpen) {
+      setSelectedId(config.formationOption || 'autonomous_ai');
+    }
+  }, [isOptionsModalOpen, config.formationOption]);
+
   if (!isOptionsModalOpen) return null;
+
 
   const getOptionIcon = (iconName: string) => {
     switch (iconName) {
